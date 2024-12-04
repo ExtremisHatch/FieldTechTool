@@ -1,0 +1,21 @@
+# Ignore executable files
+*.exe
+
+# Ignore text files
+*.txt
+
+# Ignore PDF files
+*.pdf
+
+# Ignore Microsoft Office files
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+
+# Ignore other common Office files
+*.odt
+*.ods
+*.odp
