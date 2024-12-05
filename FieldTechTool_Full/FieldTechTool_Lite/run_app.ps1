@@ -8,7 +8,9 @@
 # - FieldTechTool
 # - FieldTechToolbox
 
-
+# Set Location to Script File Location, as all Paths are relative
+# This'll typically only affect users in Powershell ISE, whom haven't directly run the file (Such as myself, for development)
+Set-Location $PSScriptRoot
 
 # Imports
 . .\Menus\main_menu.ps1
