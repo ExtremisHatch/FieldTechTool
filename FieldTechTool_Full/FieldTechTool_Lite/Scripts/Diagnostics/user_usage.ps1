@@ -36,7 +36,7 @@ function FindFileNewerThan {
     foreach ($File in (Get-ChildItem $Path -ErrorAction SilentlyContinue)) {
         
         # Return File if it's been modified since the Date provided
-        if ($File.LastWriteTime -lt $Date) {
+        if ($File.LastWriteTime -gt $Date) {
             return $File
 
         # Else if the File is also a Folder, rerun this function on the Folder
