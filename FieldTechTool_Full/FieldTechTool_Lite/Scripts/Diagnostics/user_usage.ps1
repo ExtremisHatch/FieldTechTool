@@ -55,7 +55,7 @@ function FindFileNewerThan {
             return $File
 
         # Else if the File is also a Folder, rerun this function on the Folder
-        } elseif ($File.PSIsContainer) {
+        } elseif ($Recurse -and $File.PSIsContainer) {
             $result = FindFileNewerThan -Path $File.FullName -Date $Date
             if ($result -ne $null) {
                 return $result;
