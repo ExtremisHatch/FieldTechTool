@@ -9,16 +9,31 @@ function GetLastDesktopAccess {
 
     $FailResult = if (IsAdmin) { $null } else { 'N/A (May need Admin permissions)' }
     
+    # Both of these directories don't seem to randomly update
+    # Seeing as both of these are pretty actively used when a user is logged in,
+    # they should make for a good rough estimate of a Users last activity
+    $Locations = @("C:\Users\{0}\AppData\Roaming\Microsoft\Windows\Recent",
+                   "C:\Users\{0}\AppData\Local\Temp")
+
     foreach ($User in $Users) {
         $Username = $User.BaseName
-        $Desktop = "$($User.FullName)\Desktop"
-        if (Test-Path $Desktop -ErrorAction SilentlyContinue) {
-            $UserData += [PSCustomObject]@{UserName=$Username;LastAccess=(Get-Item $Desktop).LastAccessTime}
-        } else {
-            # If the User exists they should have a Desktop folder
-            # However, you may not have permissions to view (or potentially it doesn't exist?)
-            $UserData += [PSCustomObject]@{UserName=$Username;LastAccess=$FailResult}
+        $Desktop =  "$($User.FullName)\AppData\Local\Temp" #"$($User.FullName)\Desktop"
+
+        $LastAccessed = $null
+
+        $Locations | % {
+            $Location = [String]::Format($_, $Username)
+            if (Test-Path $Location -ErrorAction SilentlyContinue) {
+                $File = Get-Item $Location
+                if (($LastAccessed -eq $null) -or ($LastAccessed.LastWriteTime -lt $File.LastWriteTime)) {
+                    $LastAccessed = $File
+                }
+            }
         }
+
+        # A little messy, but easier to just toss 'if' statement in here
+        $UserData += [PSCustomObject]@{UserName=$Username;
+                                       LastAccess=$(if ($LastAccessed -eq $null) {$FailResult} else {$LastAccessed.LastWriteTime});}
     }
 
     return $UserData
