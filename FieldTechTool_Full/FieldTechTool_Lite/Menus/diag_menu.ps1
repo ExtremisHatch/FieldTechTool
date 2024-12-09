@@ -54,8 +54,10 @@ function Show-DiagMenu {
                 Clear-Host
 
                 $UserData = GetLastDesktopAccess
+
+                Write-Host "Users:"
                 foreach ($User in $UserData) {
-                    Write-Host "$($User.UserName): $($User.LastAccess)"
+                    Write-Host "`t$($User.UserName): $($User.LastAccess)"
                 }
 
                 Read-Host 'Press enter to continue...';
@@ -79,13 +81,13 @@ function Show-DiagMenu {
                 Write-Host "Finished scanning in $TimeTaken seconds"
 
                 if ($LastDriveUsage.LastUsage -eq $null) {
-                    Write-Host "No usage found in the last $DaysSince days!"
+                    Write-Host "No usage found in the last $DaysSince days!" -ForegroundColor Red
                 } else {
                     $ModifiedFile = $LastDriveUsage.File
 
-                    Write-Host "Found usage in the last $DaysSince days: "
-                    Write-Host "File Modified: $($ModifiedFile.FullName)"
-                    Write-Host "Modified At: $($ModifiedFile.LastWriteTime.ToShortDateString())"
+                    Write-Host "Found usage in the last $DaysSince days: " -ForegroundColor Green
+                    Write-Host "`tFile Modified: $($ModifiedFile.FullName)"
+                    Write-Host "`tModified At: $($ModifiedFile.LastWriteTime.ToShortDateString())"
                 }
 
                 Read-Host 'Press enter to continue...';
