@@ -48,7 +48,8 @@ function GetDriverDeviceInformation {
     # Raw GPU Name, to be split for relevant info
     # Example of each step provided
     # GPUName "NVIDIA GeForce RTX 2070 with Max-Q Design"
-    $GPUName = Get-WmiObject Win32_VideoController | Where-Object Name -Like '*NVIDIA*' | % { $_.Name }
+    $GPU = Get-WmiObject Win32_VideoController | Where-Object Name -Like '*NVIDIA*'
+    $GPUName = $GPU.Name
     
     # Split the name up for sectioning
     $GPUNameTokens = $GPUName.Split(' ')
@@ -65,6 +66,16 @@ function GetDriverDeviceInformation {
     # "RTX 2070"
     $ShortGPUName = $GPUNameTokens[2..3] -join ' '
 
+    # Unused, as this value format doesn't really come up anywhere in Nvidia's API
+    # Derive the 'proper' (hopefully) version number from this
+    $GPUDriverVersion = $GPU.DriverVersion
+
+    # My Computer reports the Driver Version as "32.0.15.5612"
+    # Nvidia Control Panel states the version is "556.12"
+    # I'm going out on a limb here and saying they're deriving it like the below
+    # (What're the chances this is just a big coinky dink)
+    $GPUShortDriverVersion = $GPUDriverVersion.Replace(".","") | % { $_.Substring($_.Length - 5).Insert(3, ".") }
+
     return @{WindowsVersion=$WindowsVersion;
              OSArchitecture=$OSArchitecture;
              IsLaptop=$IsLaptop;
@@ -73,19 +84,32 @@ function GetDriverDeviceInformation {
              GPUBrand=$GPUBrand;
              GPUProductType=$GPUProductType;
              GPUProductSeries=$GPUProductSeries;
-             ShortGPUName=$ShortGPUName}
+             ShortGPUName=$ShortGPUName;
+             ShortGPUDriverVersion=$GPUShortDriverVersion}
 }
 
 # Unsure if I should pass data to this function, or if it should fetch it itself
 # For convenience sake, I'll do the latter (for now)
 # This function will find the closest match(es), and leave it up to the user to confirm
 function FindRelevantGPUDrivers {
+    param([switch] $OutputProgress)
+
+    if ($OutputProgress) {
+        Write-Host "Gathering local device data..." -ForegroundColor Gray
+    }
     $Device = GetDriverDeviceInformation
+    
+    if ($OutputProgress) {
+        Write-Host "Loading NVidia GPU Configurations..." -ForegroundColor Gray
+    }
     $GPUList = GetNvidiaGPUList
 
     # Initial Filter to relevant OS results (Example: "Windows 11", "Windows 10 32-bit")
     $OSFilter = if ($Device.WindowsVersion.EndsWith('11')) { $Device.WindowsVersion } else { "$($Device.WindowsVersion) $($Device.OSArchitecture)" }
 
+    if ($OutputProgress) {
+        Write-Host "Filtering through $($GPUList.Count) configurations..." -ForegroundColor Gray
+    }
     :GPUIterator
     foreach ($GPUConfig in $GPUList) {
         # Product Name Example: GeForce RTX 20 Series (Notebooks) | GeForce RTX 2070 | Windows 11
@@ -131,12 +155,10 @@ function FindRelevantGPUDrivers {
         $languageCode = 1033 # English? May not be required
         $dch = 0 #1=GameReady # This is for the Game Ready drivers I believe? Without it the URL returns the studio drivers
 
-        # No idea was CRD is, but for Studio drivers the property 'IsCRD' = 1
+        # No idea what CRD is, but for Studio drivers the property 'IsCRD' = 1
         # Adding 'upCRD=1' into our query returns *only* Studio drivers
-        
         $NvidiaDriverQueryURL = "https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup&psid=$psid&pfid=$pfid&osID=$osid&languageCode=$languageCode&dch=$dch&upCRD=1"
-        Write-Host "Quering URL"
-        Write-Host $NvidiaDriverQueryURL
+        
         # Based on the response JSon format, if $Response.Success -eq 1, then the below should work
         # $Response.IDS[0].downloadInfo.DownloadURL
     
