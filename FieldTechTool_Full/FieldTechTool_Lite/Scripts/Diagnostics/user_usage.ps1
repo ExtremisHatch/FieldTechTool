@@ -36,6 +36,8 @@ function GetLastDesktopAccess {
                                        LastAccess=$(if ($LastAccessed -eq $null) {$FailResult} else {$LastAccessed.LastWriteTime});}
     }
 
+    $UserData | ConvertTo-Html -As List | Out-File ".\Results\$($env:COMPUTERNAME)-LastDesktopAccess.htm"
+
     return $UserData
 }
 
@@ -69,6 +71,7 @@ function FindFileNewerThan {
 
 # Potential flaw of this function is if we're running it and we're connected
 # to the machine, aren't we inadvertently modifying files thus ruining these results?
+# TODO: Potentially rename this method? It's not the 'Last' usage, just *any*
 function GetLastDriveUsage {
     param([Parameter(Mandatory=$True)][DateTime]$SinceDate)
 
@@ -87,5 +90,12 @@ function GetLastDriveUsage {
     $FinishTime = [DateTime]::Now
     $Difference = $FinishTime.Subtract($StartTime)
     
-    return @{LastUsage=$LastUsage;File=$File;TimeElapsed=$Difference}
+    $UsageData = @{LastUsage=$LastUsage;File=$File;TimeElapsed=$Difference}
+
+    # This was a pain in my bottom, debugging why ConvertTo-Html doesn't like 99% of formats I give it (facepalm)
+    [pscustomobject]@{"File Used At"="$($LastUsage.ToShortTimeString()) $($LastUsage.ToShortDateString())";
+                      "File"=$($File.FullName);
+                      "Time Elapsed Searching"="$($Difference.TotalMilliseconds) ms"} | ConvertTo-Html -As List | Out-File ".\Results\$($env:COMPUTERNAME)-LastDriveUsage.htm"
+    
+    return $UsageData
 }
