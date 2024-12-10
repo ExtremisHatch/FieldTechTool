@@ -53,7 +53,8 @@ function Show-AdminMenu {
                     Write-Host "Found $($GPUDrivers.Count) potential driver(s)..." -ForegroundColor Gray
 
                     $Device = GetDriverDeviceInformation
-                    Write-Host "`nCurrent GPU Driver Version: $($Device.ShortGPUDriverVersion)" -ForegroundColor Yellow
+                    Write-Host "`nCurrent GPU: $($Device.GPUName)" -ForegroundColor Yellow
+                    Write-Host "`tDriver Version: $($Device.ShortGPUDriverVersion)" -ForegroundColor Yellow
 
                     Write-Host "`nDrivers Available:"
                     foreach ($Driver in $GPUDrivers) {
