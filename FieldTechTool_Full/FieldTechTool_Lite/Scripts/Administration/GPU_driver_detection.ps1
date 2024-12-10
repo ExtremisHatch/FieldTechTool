@@ -153,12 +153,13 @@ function FindRelevantGPUDrivers {
         $pfid = $GPUConfig.ProductFamilyID
         $osid = $GPUConfig.OperatingSystemID
         $languageCode = 1033 # English? May not be required
-        $dch = 0 #1=GameReady # This is for the Game Ready drivers I believe? Without it the URL returns the studio drivers
+        $dch = 1 # This is for the Game Ready drivers I believe? Without it the URL returns the studio drivers | EDIT: WRONG
 
         # No idea what CRD is, but for Studio drivers the property 'IsCRD' = 1
         # Adding 'upCRD=1' into our query returns *only* Studio drivers
         $NvidiaDriverQueryURL = "https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup&psid=$psid&pfid=$pfid&osID=$osid&languageCode=$languageCode&dch=$dch&upCRD=1"
-        
+        # https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup&qnf=0&ctk=null&numberOfResults=1&dch=1
+
         # Based on the response JSon format, if $Response.Success -eq 1, then the below should work
         # $Response.IDS[0].downloadInfo.DownloadURL
     
@@ -170,7 +171,7 @@ function FindRelevantGPUDrivers {
         # "The Driver DownloadID details found"
         #$DownloadMessage = $DownloadInfo.Messaging.MessageValue
         
-        $DriverName = $DownloadInfo.Name
+        $DriverName = [System.Web.HttpUtility]::UrlDecode($DownloadInfo.Name)
         $DriverDownloadURL = $DownloadInfo.DownloadURL
         $DriverVersion = $DownloadInfo.Version
         $DownloadSize = $DownloadInfo.DownloadURLFileSize
