@@ -72,6 +72,83 @@ function GetDriverDeviceInformation {
              GPUName=$GPUName;
              GPUBrand=$GPUBrand;
              GPUProductType=$GPUProductType;
-             GPUproductSeries=$GPUProductSeries;
+             GPUProductSeries=$GPUProductSeries;
              ShortGPUName=$ShortGPUName}
 }
+
+# Unsure if I should pass data to this function, or if it should fetch it itself
+# For convenience sake, I'll do the latter (for now)
+# This function will find the closest match(es), and leave it up to the user to confirm
+function FindRelevantGPUDrivers {
+    $Device = GetDriverDeviceInformation
+    $GPUList = GetNvidiaGPUList
+
+    # Initial Filter to relevant OS results (Example: "Windows 11", "Windows 10 32-bit")
+    $OSFilter = if ($Device.WindowsVersion.EndsWith('11')) { $Device.WindowsVersion } else { "$($Device.WindowsVersion) $($Device.OSArchitecture)" }
+
+    :GPUIterator
+    foreach ($GPUConfig in $GPUList) {
+        # Product Name Example: GeForce RTX 20 Series (Notebooks) | GeForce RTX 2070 | Windows 11
+        $ProductName = $GPUConfig.ProductNameMeta
+        
+        # Can't do nada if its null
+        if ($ProductName -eq $null) {
+            continue
+        }
+        
+        # Check the Product Name contains most pieces of our data (GPU Names vary, such as "MaxQ Design" nonsense. Ignore that and only check important stuff)
+        if (-not ($ProductName.EndsWith($OSFilter) -and ($ProductName -like "*$($Device.GPUProductType)*") -and ($ProductName -like "*$($Device.ShortGPUName)*"))) {
+            continue
+        }
+    
+        # The below isn't implemented yet, as I am unsure how correct the local Notebook classification is
+        # Would rather include more results than filter out a correct result
+        ## If we ARE a Notebook, look for a Notebook driver
+        #if ($IsNotebook -and (-not $ProductName -like "*Notebook*")) {
+        #    continue;
+        #}
+    
+        # After confirming OUR data matches GPU Data
+        # Confirm that GPU Data matches OUR data
+        # Example: ProductNameMeta=GeForce RTX 20 Series | GeForce RTX 2070 SUPER | Windows 11
+        # RTX 2070 will match RTX 2070 Super, but 2070 Super won't match RTX 2070
+        $DataGPUName = $ProductName.Split('|')[1].Trim()
+        
+        foreach ($GPUPiece in $DataGPUName.Split(' ')) {
+            if (-not ($Device.GPUName.Contains($GPUPiece))) {
+               #Write-Host "'$GPUName' doesn't contain '$GPUPiece' [$DataGPUName]"
+               continue GPUIterator # Continue the outer loop
+            }
+        }
+        Write-Host "GPU DATA"
+        Write-Host $GPUConfig
+        Write-Host ""
+        # If we get this far, the match is pretty good
+        # Store the driver data, and fetch the download URL
+        $psid = $GPUConfig.ProductSeriesID
+        $pfid = $GPUConfig.ProductFamilyID
+        $osid = $GPUConfig.OperatingSystemID
+        $languageCode = 1033 # English? May not be required
+        $dch = 0 #1=GameReady # This is for the Game Ready drivers I believe? Without it the URL returns the studio drivers
+
+        # No idea was CRD is, but for Studio drivers the property 'IsCRD' = 1
+        # Adding 'upCRD=1' into our query returns *only* Studio drivers
+        
+        $NvidiaDriverQueryURL = "https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup&psid=$psid&pfid=$pfid&osID=$osid&languageCode=$languageCode&dch=$dch&upCRD=1"
+        Write-Host "Quering URL"
+        Write-Host $NvidiaDriverQueryURL
+        # Based on the response JSon format, if $Response.Success -eq 1, then the below should work
+        # $Response.IDS[0].downloadInfo.DownloadURL
+    
+        $Request = Invoke-WebRequest -Uri $NvidiaDriverQueryURL -Method Get -DisableKeepAlive
+        $Response = $Request.Content | ConvertFrom-Json
+        $Response > "C:\Users\TAYL17691\Desktop\Code\output2.txt"
+        $DownloadInfo = $Response.IDS[0].downloadInfo
+        $DownloadMessage = $DownloadInfo.Messaging.MessageValue
+        $DriverDownloadURL = $DownloadInfo.DownloadURL
+    
+        Write-Host "Driver Status: $DownloadMessage"
+        Write-Host "Download URL (If Available): $DriverDownloadURL"
+    }
+}
+
