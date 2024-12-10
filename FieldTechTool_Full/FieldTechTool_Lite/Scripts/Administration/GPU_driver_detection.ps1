@@ -110,6 +110,9 @@ function FindRelevantGPUDrivers {
     if ($OutputProgress) {
         Write-Host "Filtering through $($GPUList.Count) configurations..." -ForegroundColor Gray
     }
+
+    $GPUDriverResults = @()
+
     :GPUIterator
     foreach ($GPUConfig in $GPUList) {
         # Product Name Example: GeForce RTX 20 Series (Notebooks) | GeForce RTX 2070 | Windows 11
@@ -140,13 +143,10 @@ function FindRelevantGPUDrivers {
         
         foreach ($GPUPiece in $DataGPUName.Split(' ')) {
             if (-not ($Device.GPUName.Contains($GPUPiece))) {
-               #Write-Host "'$GPUName' doesn't contain '$GPUPiece' [$DataGPUName]"
                continue GPUIterator # Continue the outer loop
             }
         }
-        Write-Host "GPU DATA"
-        Write-Host $GPUConfig
-        Write-Host ""
+
         # If we get this far, the match is pretty good
         # Store the driver data, and fetch the download URL
         $psid = $GPUConfig.ProductSeriesID
@@ -164,13 +164,29 @@ function FindRelevantGPUDrivers {
     
         $Request = Invoke-WebRequest -Uri $NvidiaDriverQueryURL -Method Get -DisableKeepAlive
         $Response = $Request.Content | ConvertFrom-Json
-        $Response > "C:\Users\TAYL17691\Desktop\Code\output2.txt"
+
         $DownloadInfo = $Response.IDS[0].downloadInfo
-        $DownloadMessage = $DownloadInfo.Messaging.MessageValue
+        
+        # "The Driver DownloadID details found"
+        #$DownloadMessage = $DownloadInfo.Messaging.MessageValue
+        
+        $DriverName = $DownloadInfo.Name
         $DriverDownloadURL = $DownloadInfo.DownloadURL
-    
-        Write-Host "Driver Status: $DownloadMessage"
-        Write-Host "Download URL (If Available): $DriverDownloadURL"
+        $DriverVersion = $DownloadInfo.Version
+        $DownloadSize = $DownloadInfo.DownloadURLFileSize
+        $DriverDetails = @{DownloadURL=$DriverDownloadURL;
+                           DriverName=$DriverName;
+                           ProductName=$ProductName;
+                           DownloadSize=$DownloadSize;
+                           DriverVersion=$DriverVersion}
+
+        $GPUDriverResults += $DriverDetails
     }
+
+    if ($OutputProgress) {
+        Write-Host "Finished with $($GPUDriverResults.Count) Driver result(s)" -ForegroundColor Gray
+    }
+
+    return $GPUDriverResults
 }
 
