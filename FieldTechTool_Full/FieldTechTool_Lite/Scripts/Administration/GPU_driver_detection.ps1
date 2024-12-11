@@ -163,7 +163,7 @@ function FindRelevantGPUDrivers {
         # Adding 'upCRD=1' into our query returns *only* Studio drivers
         # 10/12/24: It seems for the A2000 (Non GeForce?) GPU's, the upCRD param causes nothing to return
         # I believe it is due to there being no "Game Ready" ones for this GPU? Hence no filter needed? It works without!
-        $upCRD = [int]($Device.GPUName -contains "GeForce") # Needs testing on more devices
+        $upCRD = [int]($Device.GPUName -like "*GeForce*") # Needs testing on more devices
         $NvidiaDriverQueryURL = "https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup&psid=$psid&pfid=$pfid&osID=$osid&languageCode=$languageCode&dch=$dch&upCRD=$upCRD"
         # https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup&qnf=0&ctk=null&numberOfResults=1&dch=1
 
