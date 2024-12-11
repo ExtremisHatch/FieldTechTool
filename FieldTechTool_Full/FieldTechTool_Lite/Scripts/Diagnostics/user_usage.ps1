@@ -36,7 +36,9 @@ function GetLastDesktopAccess {
                                        LastAccess=$(if ($LastAccessed -eq $null) {$FailResult} else {$LastAccessed.LastWriteTime});}
     }
 
-    $UserData | ConvertTo-Html -As List | Out-File ".\Results\$($env:COMPUTERNAME)-LastDesktopAccess.htm"
+    $ExportData = @()
+    $UserData | % { if ($_.LastAccess.GetType() -eq [DateTime]) { $ExportData += [PSCustomObject]@{UserName=$_.UserName;LastAccess=$_.LastAccess.ToString("dd/MM/yyyy")}} else {$ExportData+=$_} } 
+    $ExportData | ConvertTo-Html -As List | Out-File ".\Results\$($env:COMPUTERNAME)-LastDesktopAccess.htm"
 
     return $UserData
 }
@@ -93,7 +95,7 @@ function GetLastDriveUsage {
     $UsageData = @{LastUsage=$LastUsage;File=$File;TimeElapsed=$Difference}
 
     # This was a pain in my bottom, debugging why ConvertTo-Html doesn't like 99% of formats I give it (facepalm)
-    [pscustomobject]@{"File Used At"="$($LastUsage.ToShortTimeString()) $($LastUsage.ToShortDateString())";
+    [pscustomobject]@{"File Used At"="$($LastUsage.ToShortTimeString()) $($LastUsage.ToString("dd/MM/yyyy"))";
                       "File"=$($File.FullName);
                       "Time Elapsed Searching"="$($Difference.TotalMilliseconds) ms"} | ConvertTo-Html -As List | Out-File ".\Results\$($env:COMPUTERNAME)-LastDriveUsage.htm"
     
