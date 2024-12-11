@@ -53,8 +53,26 @@ function Show-AdminMenu {
                     Write-Host "Found $($GPUDrivers.Count) potential driver(s)..." -ForegroundColor Gray
 
                     $Device = GetDriverDeviceInformation
+
+                    # Current GPU Driver Version (Shortened NVidia "Standard" lol)
+                    $CurrentVersion = $Device.ShortGPUDriverVersion | % { @{Version=([double]$_);Major=([int]$_.Split('.')[0]);Minor=([int]$_.Split('.')[1])} }
+                    
+                    # Get the latest available version out of the results, then manipulate into a nice convenient object (Very clean, totally doesn't need a rewrite)
+                    $LatestAvailable = ($GPUDrivers.DriverVersion | %{[double]$_} | Sort-Object -Descending | Select-Object -First 1) | `
+                                        % { @{Version=$_;Major=([int]$_.ToString().Split('.')[0]);Minor=([int]$_.ToString().Split('.')[1])} }
+                    
+                    $Outdated = $LatestAvailable.Version -gt $CurrentVersion.Version
+                    $OutdatedType = if ($Outdated) { if ($LatestAvailable.Major -gt $CurrentVersion.Major) {"Major"} else {"Minor"} } else { $null }
+
+                    # List out current details for user
                     Write-Host "`nCurrent GPU: $($Device.GPUName)" -ForegroundColor Yellow
-                    Write-Host "`tDriver Version: $($Device.ShortGPUDriverVersion)" -ForegroundColor Yellow
+
+                    # If Outdated, don't print new line yet
+                    Write-Host "`tDriver Version: $($Device.ShortGPUDriverVersion)" -ForegroundColor Yellow -NoNewline:$Outdated 
+
+                    if ($Outdated) {
+                        Write-Host " [Potential $OutdatedType Update Available]" -ForegroundColor Magenta
+                    }
 
                     Write-Host "`nDrivers Available:"
                     foreach ($Driver in $GPUDrivers) {
