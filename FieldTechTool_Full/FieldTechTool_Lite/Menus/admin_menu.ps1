@@ -75,10 +75,47 @@ function Show-AdminMenu {
                     }
 
                     Write-Host "`nDrivers Available:"
-                    foreach ($Driver in $GPUDrivers) {
-                        Write-Host "$($Driver.ProductName)" -ForegroundColor Yellow
+                    for ($i=0; $i -lt $GPUDrivers.Count; $i++) {
+                        $Driver = $GPUDrivers[$i]
+                        Write-Host "[$($i+1)] $($Driver.ProductName)" -ForegroundColor Yellow
                         Write-Host "`t$($Driver.DriverName) [Version: $($Driver.DriverVersion)]"
                         Write-Host "`tDownload URL [$($Driver.DownloadSize)]: $($Driver.DownloadURL)"
+                    }
+
+                    $DownloadDriver = @("Y","YES") -contains (Read-Host "`nWould you like to download a listed GPU Driver? (Y/n)")
+                    if ($DownloadDriver) {
+                        while (($DriverIndex = Read-Host "Please input the Number of the GPU Driver you wish to download") -ne $null) {
+                            # Ensure it's a number
+                            if ($DriverIndex -notmatch "^(\d)*$") { continue; }
+                            
+                            # Cast to Int
+                            $DriverIndex = [int]$DriverIndex;
+
+                            # If it's within range, break!
+                            if ($DriverIndex -le $GPUDrivers.Count -and $DriverIndex -gt 0) { break; }
+                        }
+
+                        # Driver Selected by User
+                        $SelectedDriver = $GPUDrivers[$DriverIndex-1]
+                        $DownloadURL = $SelectedDriver.DownloadURL
+
+                        # If DownloadURL ends with ".exe", ".app", ".XXX", we will keep the end of the URL as the file name
+                        $FileName = if ($DownloadURL -match "\.[a-zA-Z0-9]{2,3}$") { $DownloadURL.Substring($DownloadURL.LastIndexOf('/') + 1) } else {'GPU-Driver.exe'}
+                        
+                        # Local Output Path
+                        $OutputPath = ".\Drivers\"
+                        $DriverLocation = "$($OutputPath)$($FileName)"
+                        if (-not (Test-Path $OutputPath)) {
+                            New-Item -Path $OutputPath -ItemType "Directory" > $null
+                        }
+
+                        Write-Host "Downloading `"$($SelectedDriver.ProductName)`" driver [$($SelectedDriver.DownloadSize)]"
+                        Write-Host "`tThis may take some time..." -ForegroundColor Gray
+
+                        Invoke-WebRequest -Uri $DownloadURL -OutFile $DriverLocation
+
+                        Write-Host "Download complete!" -ForegroundColor Green
+                        Write-Host "Driver Location: $((Get-Item $DriverLocation).FullName)"
                     }
                 }
 
