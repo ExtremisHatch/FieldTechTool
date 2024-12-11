@@ -59,7 +59,7 @@ function GetDriverDeviceInformation {
     
     # Temporary (?) Offset system to fix issues with GPU's not containing "GeForce"
     # Example from Brandon Test Laptop: "NVIDIA RTX A2000 8GB Laptop GPU"
-    $PartOffset = if ($GPUName -notcontains 'GeForce') { -1 } else { 0 }
+    $PartOffset = if ($GPUName -notlike '*GeForce*') { -1 } else { 0 }
 
     # "GeForce"
     $GPUProductType = $GPUNameTokens[$PartOffset+1]
