@@ -4,6 +4,7 @@
 . .\Scripts\Administration\DPLink_HPIA_Final_Updates.ps1
 . .\Scripts\Administration\robocopy.ps1
 . .\Scripts\Administration\840_G9_add.ps1
+. .\Scripts\Administration\GPU_driver_detection.ps1
 function Show-AdminMenu {
     $toolRootDirectory = Resolve-Path .
     do {
@@ -11,6 +12,7 @@ function Show-AdminMenu {
         Write-Host '2. Backup user data with Robocopy'
         Write-Host '3. Disable Sleep and Hibernation on this machine'
         Write-Host "4. Jack's script for 840 G9 (Intel) Autopilot join"
+        Write-Host "5. Check for GPU Driver Update"
         Write-Host 'q. Previous menu'
         $choice = Read-Host 'Please choose an option'
         switch ($choice.ToLower()) {
@@ -36,6 +38,18 @@ function Show-AdminMenu {
                 Start-Sleep -Seconds 1.5
                 Get-JackInfo
                 Clear-Host
+             }
+             '5' {
+                Write-Host "Triggered GPU Driver Update Check" -ForegroundColor Green
+                Start-Sleep -Seconds 1.5
+                Clear-Host
+
+                # Display driver options to user
+                ProvideUserGPUDriverOptions
+
+                Read-Host "`nPress enter to continue...";
+                Clear-Host
+
              }
              'q' {
                 Clear-Host
