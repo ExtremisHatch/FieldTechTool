@@ -182,7 +182,7 @@ function FindRelevantGPUDrivers {
         $DriverDownloadURL = $DownloadInfo.DownloadURL
         $DriverVersion = $DownloadInfo.Version
         $DownloadSize = $DownloadInfo.DownloadURLFileSize
-        $DriverDetails = @{DownloadURL=$DriverDownloadURL;
+        $DriverDetails = [PSCustomObject]@{DownloadURL=$DriverDownloadURL;
                            DriverName=$DriverName;
                            ProductName=$ProductName;
                            DownloadSize=$DownloadSize;
@@ -195,12 +195,16 @@ function FindRelevantGPUDrivers {
         Write-Host "Finished with $($GPUDriverResults.Count) Driver result(s)" -ForegroundColor Gray
     }
 
-    return $GPUDriverResults
+    # Utilize 'Unary Operator' to ensure an Array is returned, even when there's only 1 Object
+    return ,$GPUDriverResults
 }
 
 function ProvideUserGPUDriverOptions {
     # Find Drivers, enable progress output so user doesn't think everything broke
-    $GPUDrivers = FindRelevantGPUDrivers -OutputProgress
+    # For some reason, if there's only 1 result it's getting recasted as a single object instead of a list
+    # Fix this by redefining it as a list (Well, an array)
+    # After some research, it's a PowerShell 'quirk'. This can be fixed with a Unary operator. (Keeping the type casting for future reference)
+    $GPUDrivers = [System.Array[PSCustomObject]] (FindRelevantGPUDrivers -OutputProgress)
     
     if ($GPUDrivers.Count -eq 0) {
         Write-Host "Couldn't find any Drivers online, this may be an error!"
