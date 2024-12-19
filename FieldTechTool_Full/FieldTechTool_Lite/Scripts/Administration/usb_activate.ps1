@@ -9,10 +9,81 @@
 # Borrowing a C# form
 Add-Type -AssemblyName System.Windows.Forms
 
+function Restart-Explorer {
+    
+}
+
+<# Returns the Following (Example):
+Name                           Value                                                                                                                                             
+----                           -----                                                                                                                                             
+Write                          False                                                                                                                                             
+Read                           False                                                                                                                                             
+Execute                        False
+#>
+function GetUSBPermissions {
+    param([Microsoft.Win32.RegistryKey]$USBRegistry)
+
+    # Setup 'Parent' form to allow for 'TopMost' Property (AlwaysOnTop)
+    $AlwaysOnTopForm = New-Object -TypeName System.Windows.Forms.Form -Property @{TopMost=$true}
+    
+    # Check if User already has full USB permissions
+    $HasUSBPermissions = ($RegPath.Property | Where-Object { $RegPath.GetValue($_) -eq 0 }).Count -eq 3
+
+    $USBPermissions = @{}
+
+    # Permission Types, if '-eq 0' it means NOT deny meaning YES permission
+    @('Read','Write','Execute') | % { $USBPermissions[$_] = ($RegPath.GetValue("Deny_$($_)") -eq 0) }
+
+    return $USBPermissions
+}
+
+function SetUSBPermissions {
+    param([Microsoft.Win32.RegistryKey]$USBRegistry, [hashtable]$Permissions)
+
+    $Policy = "registry::"+ $USBRegistry.Name 
+    
+    # Filter through to ensure the permissions we're setting exists
+    # Then set ItemProperty with opposite of value (Turn True into False, and vice versa, as the Value is for DENY not ALLOW)
+    $Permissions.Keys | Where-Object { $ExistingValue = $USBRegistry.GetValue("Deny_$($_)"); return $ExistingValue -ne $null } | 
+        % { Set-ItemProperty -Path $Policy -Name "Deny_$($_)" -Value ([int](-not $Permissions.Item($_))) }
+}
+
+function TestCanModifyRegistry {
+    param([Microsoft.Win32.RegistryKey]$Registry)
+
+    # Generate a random GUID so we know we aren't accidentally modifying existing value
+    $TestValue = (New-Guid).ToString().Replace('-','')
+    $Policy = "registry::"+ $Registry.Name 
+    
+    try {
+        New-ItemProperty -Path $Policy -Name $TestValue -Value "0" > $null
+        Remove-ItemProperty -Path $Policy -Name $TestValue > $null
+    } catch {
+        return $false
+    }
+
+    return $true
+}
+
 function Enable_USB {
     
+    # Get Account, and UserSID, to create Regedit Path for RemoveableStorageDevices
+    $Account = [System.Security.Principal.NTAccount] (Get-WMIObject -class Win32_ComputerSystem).Username
+    $UserSID = $Account.Translate([System.Security.Principal.SecurityIdentifier]).Value 
+    $RegPath = Get-ChildItem -Path ("registry::HKEY_USERS\$UserSID\Software\Policies\Microsoft\Windows\RemovableStorageDevices\")
+
+    # Get Current USB Permissions/Capabilities
+    $CurrentPermissions = GetUSBPermissions -USBRegistry $RegPath
+
     # Create Parent form for TopMost setting by Taylor, Koupa
     $DisplayTopMost = New-Object System.Windows.Forms.Form -Property @{TopMost=$true}
+
+
+    # User already has full USB Permissions
+    if (-not $CurrentPermissions.ContainsValue($false)) {
+        [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'USB (Storage) is already enabled!', 'Error!')
+        return
+    }
 
     # Create a message box
     $result = [System.Windows.Forms.MessageBox]::Show($DisplayTopMost, 'USB (Storage) enablement will require a restart of Windows Explorer and close File explorer. This may cause some items on your screen to move or refresh.', 'Continue?', [System.Windows.Forms.MessageBoxButtons]::YesNo)
