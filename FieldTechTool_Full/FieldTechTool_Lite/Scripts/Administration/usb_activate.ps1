@@ -9,8 +9,11 @@
 # Borrowing a C# form
 Add-Type -AssemblyName System.Windows.Forms
 
+# Explorer auto-restarts if killed, utilize that for restart functionality
 function Restart-Explorer {
-    
+    # Restarting explorer by Taylor, Koupa
+    # Aw shucks, thanks for the credit :)
+    Get-Process -name explorer | ForEach-Object { $_.Kill() }
 }
 
 <# Returns the Following (Example):
@@ -78,10 +81,15 @@ function Enable_USB {
     # Create Parent form for TopMost setting by Taylor, Koupa
     $DisplayTopMost = New-Object System.Windows.Forms.Form -Property @{TopMost=$true}
 
-
     # User already has full USB Permissions
     if (-not $CurrentPermissions.ContainsValue($false)) {
         [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'USB (Storage) is already enabled!', 'Error!')
+        return
+    }
+
+    # Test if user has permissions to change Regedit values
+    if (-not (TestCanModifyRegistry -Registry $RegPath)) {
+        [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'You do not have permissions to change USB (Storage) regedit values! Try again with Administrator privileges.', 'Error!')
         return
     }
 
@@ -89,35 +97,23 @@ function Enable_USB {
     $result = [System.Windows.Forms.MessageBox]::Show($DisplayTopMost, 'USB (Storage) enablement will require a restart of Windows Explorer and close File explorer. This may cause some items on your screen to move or refresh.', 'Continue?', [System.Windows.Forms.MessageBoxButtons]::YesNo)
 
     # Check the result
-    if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-        $UserName = Get-WMIObject -class Win32_ComputerSystem | Select-Object username
-        $UserSID = ([System.Security.Principal.NTAccount]($UserName.username)).Translate([System.Security.Principal.SecurityIdentifier]).Value
-        $regpath= Get-ChildItem -Path ("registry::HKEY_USERS\"+$UserSID+"\Software\Policies\Microsoft\Windows\RemovableStorageDevices\")
-        $Policy = "registry::"+ $regPath.Name 
-        Set-ItemProperty $Policy -Name "DENY_Write" -Value "0"
-        Set-ItemProperty $Policy -Name "DENY_Read" -Value "0"
-        Set-ItemProperty $Policy -Name "DENY_Execute" -Value "0"
-
-        # Restarting explorer by Taylor, Koupa
-        Get-Process -name explorer | ForEach-Object { $_.Kill() }
-
-        [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'USB (Storage) enabled.', 'Success')
-    } 
-    # A future refactor, I'll remove a lot of this duplication. Will make an issue for this. 
-    else {
+    if ($result -eq [System.Windows.Forms.DialogResult]::No) {
         [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'You chose to not have USB (Storage) enabled.', 'Not needed')
-        $UserName = Get-WMIObject -class Win32_ComputerSystem | Select-Object username
-        $UserSID = ([System.Security.Principal.NTAccount]($UserName.username)).Translate([System.Security.Principal.SecurityIdentifier]).Value
-        $regpath= Get-ChildItem -Path ("registry::HKEY_USERS\"+$UserSID+"\Software\Policies\Microsoft\Windows\RemovableStorageDevices\")
-        $Policy = "registry::"+ $regPath.Name 
-        Set-ItemProperty $Policy -Name "DENY_Write" -Value "1"
-        Set-ItemProperty $Policy -Name "DENY_Read" -Value "1"
-        Set-ItemProperty $Policy -Name "DENY_Execute" -Value "1"
-
-        # Restarting explorer by Taylor, Koupa
-        Get-Process -name explorer | ForEach-Object { $_.Kill() }
-
-        [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'USB (Storage) disabled.', 'Success')
+        return
     }
+
+    # Permissions we'll change
+    $PermissionsToChange = @{}
+
+    # Filter down to just the permissions we still need, if not all
+    $CurrentPermissions.Keys | Where-Object { $CurrentPermissions.Item($_) -ne $true } | % { $PermissionsToChange[$_] = $true }
+
+    # Set Permissions
+    SetUSBPermissions -USBRegistry $RegPath -Permissions $PermissionsToChange
     
+    # Restart explorer for changes to take effect
+    Restart-Explorer
+    
+    # Notify user of success
+    [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'USB (Storage) enabled.', 'Success')    
 }   
