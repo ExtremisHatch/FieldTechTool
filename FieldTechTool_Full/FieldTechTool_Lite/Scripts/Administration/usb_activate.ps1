@@ -59,8 +59,8 @@ function TestCanModifyRegistry {
     $Policy = "registry::"+ $Registry.Name 
     
     try {
-        New-ItemProperty -Path $Policy -Name $TestValue -Value "0" > $null
-        Remove-ItemProperty -Path $Policy -Name $TestValue > $null
+        New-ItemProperty -Path $Policy -Name $TestValue -Value "0" > $null -ErrorAction Stop
+        Remove-ItemProperty -Path $Policy -Name $TestValue > $null -ErrorAction Stop
     } catch {
         return $false
     }
