@@ -14,7 +14,7 @@ function Show-AdminMenu {
         Write-Host '3. Disable Sleep and Hibernation on this machine'
         Write-Host "4. Jack's script for 840 G9 (Intel) Autopilot join"
         Write-Host "5. Check for GPU Driver Update"
-        Write-Host "6. Enable/Disable USB access (will be cleared by policy eventually)"
+        Write-Host "6. Check or Enable USB access (will be cleared by policy eventually)"
         Write-Host 'q. Previous menu'
         $choice = Read-Host 'Please choose an option'
         switch ($choice.ToLower()) {

@@ -78,6 +78,9 @@ function Enable_USB {
     # Get Current USB Permissions/Capabilities
     $CurrentPermissions = GetUSBPermissions -USBRegistry $RegPath
 
+    Write-Host "Current USB Permissions:"
+    $CurrentPermissions.Keys | % { Write-Host "`t$($_): $($CurrentPermissions.Item($_))" }
+
     # Create Parent form for TopMost setting by Taylor, Koupa
     $DisplayTopMost = New-Object System.Windows.Forms.Form -Property @{TopMost=$true}
 
