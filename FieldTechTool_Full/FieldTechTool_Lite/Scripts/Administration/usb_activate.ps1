@@ -86,13 +86,13 @@ function Enable_USB {
 
     # User already has full USB Permissions
     if (-not $CurrentPermissions.ContainsValue($false)) {
-        [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'USB (Storage) is already enabled!', 'Error!')
+        [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'USB (Storage) is already enabled!', 'Error!') > $null
         return
     }
 
     # Test if user has permissions to change Regedit values
     if (-not (TestCanModifyRegistry -Registry $RegPath)) {
-        [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'You do not have permissions to change USB (Storage) regedit values! Try again with Administrator privileges.', 'Error!')
+        [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'You do not have permissions to change USB (Storage) regedit values! Try again with Administrator privileges.', 'Error!') > $null
         return
     }
 
@@ -101,7 +101,7 @@ function Enable_USB {
 
     # Check the result
     if ($result -eq [System.Windows.Forms.DialogResult]::No) {
-        [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'You chose to not have USB (Storage) enabled.', 'Not needed')
+        [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'You chose to not have USB (Storage) enabled.', 'Not needed') > $null
         return
     }
 
@@ -118,5 +118,5 @@ function Enable_USB {
     Restart-Explorer
     
     # Notify user of success
-    [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'USB (Storage) enabled.', 'Success')    
+    [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'USB (Storage) enabled.', 'Success') > $null
 }   
