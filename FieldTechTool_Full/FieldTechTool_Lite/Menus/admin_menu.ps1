@@ -5,6 +5,7 @@
 . .\Scripts\Administration\robocopy.ps1
 . .\Scripts\Administration\840_G9_add.ps1
 . .\Scripts\Administration\GPU_driver_detection.ps1
+. .\Scripts\Administration\usb_activate.ps1
 function Show-AdminMenu {
     $toolRootDirectory = Resolve-Path .
     do {
@@ -13,6 +14,7 @@ function Show-AdminMenu {
         Write-Host '3. Disable Sleep and Hibernation on this machine'
         Write-Host "4. Jack's script for 840 G9 (Intel) Autopilot join"
         Write-Host "5. Check for GPU Driver Update"
+        Write-Host "6. Check or Enable USB access (will be cleared by policy eventually)"
         Write-Host 'q. Previous menu'
         $choice = Read-Host 'Please choose an option'
         switch ($choice.ToLower()) {
@@ -50,6 +52,13 @@ function Show-AdminMenu {
                 Read-Host "`nPress enter to continue...";
                 Clear-Host
 
+             }
+             '6' {
+                Write-Host "Triggered USB access toggling" -ForegroundColor Green
+                Start-Sleep -Seconds 1.5
+                # Toggle USB access
+                Enable_USB
+                Clear-Host
              }
              'q' {
                 Clear-Host
