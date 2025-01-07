@@ -13,6 +13,7 @@
 Set-Location $PSScriptRoot
 
 # Imports
+. .\Scripts\PowerIO\PowerIO.ps1
 . .\Menus\main_menu.ps1
 
 # Main menu
