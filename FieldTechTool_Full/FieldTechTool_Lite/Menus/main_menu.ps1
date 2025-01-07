@@ -9,7 +9,7 @@ function Show-MainMenu {
     # show a selection of options to choose from
     $Selections = @()
 
-    $Selections += [KeySelection]::new('1', "&[white;darkred]User Administration",
+    $Selections += [KeySelection]::new('1', "&[white;red]User Administration",
                         {   Write-Host "Navigating to User Administration menu" -ForegroundColor Green
                             Start-Sleep -Seconds 1.5
                             Clear-Host
@@ -47,12 +47,12 @@ function Show-MainMenu {
                             }
                         })
 
-    $Selections += [KeySelection]::new('q', "&[red]Exit",
+    $ExitSelection = [KeySelection]::new('q', "&[red]Exit",
                         {   Write-Host "See you later!" -ForegroundColor Yellow
                             Start-Sleep -Seconds 1.5
-                            Clear-Host
-                            exit})
-    
+                            Clear-Host })
+    $Selections += $ExitSelection
+
     $Selections += [KeySelection]::new('rm', "&[white;darkred]Erase all files and folders in this directory for cleanup",
                         {   Write-Host "Erasing this application's folder and contents" -ForegroundColor Red
                             Write-Host "Are you sure? (y/n)"
@@ -71,7 +71,9 @@ function Show-MainMenu {
                             }
                         })
    
-   while ($true) {
+   $Selection = $null;
+   # While Selection doesn't exist (First iteration), or Selection isn't "Exit" (Q), keep looping
+   while ($Selection -eq $null -or $Selection.Key -ne $ExitSelection.Key) {
         $Selection = QueryUserKeySelection -Question "&[yellow;darkgray] What would you like to do? &[]`n" -Selections $Selections
         $Selection.Run()
    }
