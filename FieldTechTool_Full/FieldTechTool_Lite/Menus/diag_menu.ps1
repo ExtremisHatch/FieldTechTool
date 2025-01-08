@@ -57,7 +57,7 @@ function Show-DiagMenu {
 
                 Write-Host "Users:"
                 foreach ($User in $UserData) {
-                    Write-Host "`t$($User.UserName): $($User.LastAccess)"
+                    Write-Host "`t$($User.UserName): $($User.LastAccess.ToString("hh:mm:ss tt dd/MM/yyyy"))"
                 }
 
                 Read-Host 'Press enter to continue...';

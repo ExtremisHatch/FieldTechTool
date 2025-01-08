@@ -36,8 +36,10 @@ function GetLastDesktopAccess {
                                        LastAccess=$(if ($LastAccessed -eq $null) {$FailResult} else {$LastAccessed.LastWriteTime});}
     }
 
+    $UserData = $UserData | Sort-Object -Property LastAccess -Descending
+
     $ExportData = @()
-    $UserData | % { if ($_.LastAccess.GetType() -eq [DateTime]) { $ExportData += [PSCustomObject]@{UserName=$_.UserName;LastAccess=$_.LastAccess.ToString("dd/MM/yyyy")}} else {$ExportData+=$_} } 
+    $UserData | % { if ($_.LastAccess.GetType() -eq [DateTime]) { $ExportData += [PSCustomObject]@{UserName=$_.UserName;LastAccess=$_.LastAccess.ToString("hh:mm:ss tt dd/MM/yyyy")}} else {$ExportData+=$_} } 
     $ExportData | ConvertTo-Html -As List | Out-File ".\Results\$($env:COMPUTERNAME)-LastDesktopAccess.htm"
 
     return $UserData
