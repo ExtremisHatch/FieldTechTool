@@ -13,11 +13,11 @@ function GetLastDesktopAccess {
     # Seeing as both of these are pretty actively used when a user is logged in,
     # they should make for a good rough estimate of a Users last activity
     $Locations = @("C:\Users\{0}\AppData\Roaming\Microsoft\Windows\Recent",
-                   "C:\Users\{0}\AppData\Local\Temp")
+                   "C:\Users\{0}\AppData\Local\Temp",
+                   "C:\Users\{0}\AppData\Local\Microsoft\Windows\History\History.IE5")
 
     foreach ($User in $Users) {
         $Username = $User.BaseName
-        $Desktop =  "$($User.FullName)\AppData\Local\Temp" #"$($User.FullName)\Desktop"
 
         $LastAccessed = $null
 
@@ -39,7 +39,7 @@ function GetLastDesktopAccess {
     $UserData = $UserData | Sort-Object -Property LastAccess -Descending
 
     $ExportData = @()
-    $UserData | % { if ($_.LastAccess.GetType() -eq [DateTime]) { $ExportData += [PSCustomObject]@{UserName=$_.UserName;LastAccess=$_.LastAccess.ToString("hh:mm:ss tt dd/MM/yyyy")}} else {$ExportData+=$_} } 
+    $UserData | % { if ($_.LastAccess -ne $null -and $_.LastAccess.GetType() -eq [DateTime]) { $ExportData += [PSCustomObject]@{UserName=$_.UserName;LastAccess=$_.LastAccess.ToString("hh:mm:ss tt dd/MM/yyyy")}} else {$ExportData+=$_} } 
     $ExportData | ConvertTo-Html -As List | Out-File ".\Results\$($env:COMPUTERNAME)-LastDesktopAccess.htm"
 
     return $UserData
