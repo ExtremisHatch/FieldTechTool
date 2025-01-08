@@ -48,17 +48,17 @@ function Show-DiagMenu {
 
                             $UserData = GetLastDesktopAccess
 
-                            [PowerIO]::DisplayText("&[yellow;darkgray] User Usage List `n")
+                            [PowerIO]::DisplayText("&[yellow;darkgray] Last User Usage List `n")
                             
                             # Get Max Length username so we can align all dates neatly
                             $MaxLength = ($UserData.UserName | Measure-Object -Property Length -Maximum).Maximum
                             
                             foreach ($User in $UserData) {
                                 $PadAmount = $MaxLength - $User.UserName.Length
-                                [PowerIO]::DisplayText("`t&[white;darkcyan]$($User.UserName)&[]$(" " * $PadAmount) | &[white;darkcyan]$($User.LastAccess.ToString("hh:mm:ss tt dd/MM/yyyy"))")
+                                [PowerIO]::DisplayText("&[white;darkgray]$($User.UserName)&[]$(" " * $PadAmount) | &[white;darkgray]$($User.LastAccess.ToString("hh:mm:ss tt dd/MM/yyyy"))")
                             }
 
-                            Read-Host 'Press enter to continue...';
+                            PauseUser
                             Clear-Host });
 
     $Selections += [KeySelection]::new('5', "&[green]Check Drives for usage in the last 180 days",
@@ -67,7 +67,8 @@ function Show-DiagMenu {
                             Write-Host 'Querying local drives for usage' -ForegroundColor Green
                             Start-Sleep -Seconds 1.5
                             Clear-Host
-                            Write-Host "Please wait as drives are scanned... (May take a couple minutes)"
+
+                            [PowerIO]::DisplayText("&[gray]Please wait as drives are scanned... (May take a couple minutes)")
 
                             # Unsure of I.T's policy or requirements, defaulting to 180 days
                             $DaysSince = 180
@@ -76,19 +77,19 @@ function Show-DiagMenu {
                             # Make it pretty :)
                             $TimeTaken = ($LastDriveUsage.TimeElapsed.TotalMilliseconds/1000).ToString("#.##")
                             
-                            Write-Host "Finished scanning in $TimeTaken seconds"
+                            [PowerIO]::DisplayText("&[green]Finished scanning in &[yellow]$TimeTaken&[green] seconds")
 
                             if ($LastDriveUsage.LastUsage -eq $null) {
-                                Write-Host "No usage found in the last $DaysSince days!" -ForegroundColor Red
+                                [PowerIO]::DisplayText("&[red]No usage found in the last &[yellow]$DaysSince &[red]days!")
                             } else {
                                 $ModifiedFile = $LastDriveUsage.File
 
-                                Write-Host "Found usage in the last $DaysSince days: " -ForegroundColor Green
-                                Write-Host "`tFile Modified: $($ModifiedFile.FullName)"
-                                Write-Host "`tModified At: $($ModifiedFile.LastWriteTime.ToShortDateString())"
+                                [PowerIO]::DisplayText("&[green]Found usage in the last &[yellow]$DaysSince &[green]days: ")
+                                [PowerIO]::DisplayText("`t&[yellow]File Modified: &[white;darkgray]$($ModifiedFile.FullName)")
+                               [PowerIO]::DisplayText("`t&[yellow]Modified At: &[white;darkgray]$($ModifiedFile.LastWriteTime.ToString('hh:mm:ss tt dd/MM/yyyy'))")
                             }
 
-                            Read-Host 'Press enter to continue...';
+                            PauseUser
                             Clear-Host });
 
     $PreviousMenuSelection = [KeySelection]::new('q', "&[yellow]Previous menu",
