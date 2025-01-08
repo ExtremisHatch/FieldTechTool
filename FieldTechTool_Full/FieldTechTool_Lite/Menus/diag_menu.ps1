@@ -48,9 +48,14 @@ function Show-DiagMenu {
 
                             $UserData = GetLastDesktopAccess
 
-                            Write-Host "Users:"
+                            [PowerIO]::DisplayText("&[yellow;darkgray] User Usage List `n")
+                            
+                            # Get Max Length username so we can align all dates neatly
+                            $MaxLength = ($UserData.UserName | Measure-Object -Property Length -Maximum).Maximum
+                            
                             foreach ($User in $UserData) {
-                                Write-Host "`t$($User.UserName): $($User.LastAccess.ToString("hh:mm:ss tt dd/MM/yyyy"))"
+                                $PadAmount = $MaxLength - $User.UserName.Length
+                                [PowerIO]::DisplayText("`t&[white;darkcyan]$($User.UserName)&[]$(" " * $PadAmount) | &[white;darkcyan]$($User.LastAccess.ToString("hh:mm:ss tt dd/MM/yyyy"))")
                             }
 
                             Read-Host 'Press enter to continue...';
