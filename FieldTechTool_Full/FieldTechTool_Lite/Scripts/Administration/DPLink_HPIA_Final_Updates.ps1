@@ -32,57 +32,25 @@ function Install-Graphics {
     # Getting Graphics info from machine. Integrated and Dedicated
     $videoControllers = Get-CimInstance -ClassName Win32_VideoController
 
+    $Studio_10_GPUs = @("*RTX 2000*", "*RTX A500*", "*RTX A2000*")
+    $GPU_Intensive_GPUs = @("*RTX 2070*","*RTX A4000*","*Quadro T2000*","*RTX 2080*")
+
+    # Flaw in this is that most devices have onboard graphics alongside dedicated
+    # This for each graphics device, meaning users will almost always get a second message stating
+    # "No dedicated graphics detected" etc
     foreach ($vc in $videoControllers){
-        switch -Wildcard ($vc.Name) {
-             
-            "*RTX 2000*" {
+        if (($Studio_10_GPUs | Where-Object { $vc.Name -like $_ }) -ne $null) {
                 Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
                 Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
                 Start-Process -FilePath $Studio_10
-            }
-              
-            "*RTX A500*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
-                Start-Process -FilePath $Studio_10
-            }
-             
-            "*RTX A2000*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
-                Start-Process -FilePath $Studio_10
-            }
-             
-            "*RTX 2070*" {
+        } elseif (($GPU_Intensive_GPUs | Where-Object { $vc.Name -like $_ }) -ne $null) {
                 Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
                 Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
                 Start-Process -FilePath $GPU_Intensive
-            }
-              
-            "*RTX A4000*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
-                Start-Process -FilePath $Studio_10
-            }
-             
-            "*Quadro T2000*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
-                Start-Process -FilePath $Studio_10
-            }
-             
-            "*RTX 2080*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
-                Start-Process -FilePath $GPU_Intensive
-            }
-            # Need to make one more for the GPU intensive one. It should be something with RTX2080 in it. 
-            default {
+        } else { # Need to make one more for the GPU intensive one. It should be something with RTX2080 in it. 
                 Write-Host "No dedicated graphics detected. Continuing with HPIA." -ForegroundColor Green
-            }
         }
     }
-    
 }
 
 # Turn off sleep and hibernation for remote desktops
