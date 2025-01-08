@@ -204,7 +204,7 @@ function ProvideUserGPUDriverOptions {
     # For some reason, if there's only 1 result it's getting recasted as a single object instead of a list
     # Fix this by redefining it as a list (Well, an array)
     # After some research, it's a PowerShell 'quirk'. This can be fixed with a Unary operator. (Keeping the type casting for future reference)
-    $GPUDrivers = [System.Array[PSCustomObject]] (FindRelevantGPUDrivers -OutputProgress)
+    $GPUDrivers = [System.Array] (FindRelevantGPUDrivers -OutputProgress)
     
     if ($GPUDrivers.Count -eq 0) {
         Write-Host "Couldn't find any Drivers online, this may be an error!"
