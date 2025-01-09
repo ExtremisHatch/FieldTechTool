@@ -107,7 +107,7 @@ function QueryUserKeySelection {
         $Question, 
         [KeySelection[]]$Selections, 
         $AnswerText="Selection: ",
-        $InvalidSelectionText="&[red]Invalid selection... Please try again"
+        $InvalidSelectionText="&[red;highlight]Invalid selection&[red]... Please try again"
     )
     
     HandleTextTypesOutput -Text $Question
