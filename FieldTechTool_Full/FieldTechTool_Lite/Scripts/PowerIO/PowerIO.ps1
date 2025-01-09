@@ -13,6 +13,20 @@
 
 class PowerIO {
     
+    # Table of Symbols
+    static [HashTable] $Symbols = @{
+        WARNING=([char]9888);
+        LEFT_TRIANGLE=[TriangleSymbol]::Get('LEFT');
+        RIGHT_TRIANGLE=[TriangleSymbol]::Get('RIGHT');
+        DOWN_TRIANGLE=[TriangleSymbol]::Get('DOWN');
+        UP_TRIANGLE=[TriangleSymbol]::Get('UP');
+    }
+
+    static [HashTable] $ContrastColors = @{
+        BLACK='WHITE'; DarkBlue='WHITE'; DarkGreen='WHITE'; DarkCyan='WHITE'; DarkRed='WHITE'; DarkMagenta='WHITE'; DarkYellow='WHITE';
+        Gray='WHITE'; DarkGray='WHITE'; Blue='WHITE'; Green='BLACK'; Cyan='BLACK'; Red='WHITE'; Magenta='WHITE'; Yellow='BLACK'; White='BLACK';
+    }
+
     static [void] DisplayText([System.Object]$Text, [Boolean]$Newline) {
         HandleTextTypesOutput -Text $Text -NoNewline:(-not $Newline)
     }
@@ -22,7 +36,7 @@ class PowerIO {
     }
 
     static [String] ReadText([System.Object]$Text) {
-        if ($Text -ne $null) { Write-Host -Object $Text -NoNewline }
+        if ($Text -ne $null) { [PowerIO]::DisplayText($Text, $False) }
         return $Global:Host.UI.ReadLine();
     }
 
@@ -30,6 +44,84 @@ class PowerIO {
         return [PowerIO]::ReadText($null);
     }
 
+}
+
+# Triangle Symbol Utility Class
+class TriangleSymbol {
+    hidden static $HOLLOW_OFFSET = 1
+    hidden static $SMALL_OFFSET = 2
+    hidden static $DIRECTIONS = @('LEFT','UP','RIGHT','DOWN')
+    # https://unicodelookup.com/#triangle/1
+    hidden static $DEFINITIONS = @{LEFT=9664;UP=9650;RIGHT=9654;DOWN=9660}
+
+    hidden $Direction = @{Name='';Index=''}
+    hidden $Effects = @{Hollow=$False; Small=$False}
+
+    TriangleSymbol($Direction) {
+        $this.Direction.Index = [TriangleSymbol]::DIRECTIONS.IndexOf($Direction.ToUpper())
+        $this.Update()
+    }
+
+    [TriangleSymbol] Rotate($Value) {
+        $this.Direction.Index = ($this.Direction.Index + $Value) % [TriangleSymbol]::DIRECTIONS.Count
+        $this.Update()
+        return $this
+    }
+
+    [TriangleSymbol] RotateRight() {
+        return $this.Rotate(1)
+    }
+
+    [TriangleSymbol] RotateLeft() {
+        return $this.Rotate(-1)
+    }
+
+    [TriangleSymbol] ModifyShape([Boolean]$Hollow, [Boolean]$Small) {
+        $this.Effects.Hollow = $Hollow
+        $this.Effects.Small = $Small
+        return $this
+    }
+
+    hidden Update() {
+        $this.Direction.Name = [TriangleSymbol]::DIRECTIONS[$this.Direction.Index]
+    }
+
+    [String] ToString() {
+        $Value = [TriangleSymbol]::DEFINITIONS[$this.Direction.Name]
+        if ($this.Effects.Hollow) {
+            $Value += [TriangleSymbol]::HOLLOW_OFFSET
+        }
+
+        if ($this.Effects.Small) {
+            $Value += [TriangleSymbol]::SMALL_OFFSET
+        }
+
+        return ([char] $Value).ToString()
+    }
+
+    static [char] Get([String] $Direction, [Boolean] $Hollow, [Boolean] $Small) {
+        if (-not [TriangleSymbol]::DEFINITIONS.ContainsKey($Direction)) {
+            throw "Invalid Triangle Direction '$Direction'"
+        }
+        $BaseValue = [TriangleSymbol]::DEFINITIONS[$Direction]
+        if ($Hollow) {
+            $BaseValue += [TriangleSymbol]::HOLLOW_OFFSET
+        }
+
+        if ($Small) {
+            $BaseValue += [TriangleSymbol]::SMALL_OFFSET
+        }
+
+        return [char]$BaseValue
+    }
+
+    static [char] Get([String] $Direction, [Boolean] $Hollow) {
+        return [TriangleSymbol]::Get($Direction, $Hollow, $false)
+    }
+
+    static [char] Get([String] $Direction) {
+        return [TriangleSymbol]::Get($Direction, $false)
+    }
 }
 
 class PerfTracker {

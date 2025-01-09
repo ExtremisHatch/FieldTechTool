@@ -52,7 +52,10 @@ function QueryUser {
         }
         return ($answers -join "`n")
     } else {
-        return $Host.UI.ReadLine()
+        while (($Response = $Host.UI.ReadLine()).Length -lt 1 -and $AnswerRequired) {
+            HandleTextTypesOutput -Text "&[red]You are &[highlight]required&[red] to provide input."
+        }
+        return $Response
     }
 }
 
@@ -65,7 +68,7 @@ function QueryUserSelection {
         [Parameter(Mandatory, Position=0)] $Question,
         [Parameter(Mandatory)][Object[]] $Answers,
         $AnswerText="Selection: ",
-        $InvalidSelectionText="&[red]Invalid selection... Please try again"
+        $InvalidSelectionText="&[red;highlight]Invalid selection&[red]... Please try again"
     )
 
     # Display Question
@@ -151,7 +154,7 @@ function PauseUser {
     .SYNOPSIS
     Pauses the user, forcing them to press enter to continue
 #>
-    param( [string] $PauseText="&[yellow][!] Press 'ENTER' to continue..." )
+    param( [string] $PauseText="&[yellow]Press '&[highlight]ENTER&[yellow]' to continue..." )
 
     # Ensure NoNewLine exists, unless specifically set to False
 

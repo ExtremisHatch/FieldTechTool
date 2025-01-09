@@ -71,13 +71,39 @@ class ColoredText {
             if ($MatchStart -gt $LastMatchEnd) {
                 $CreatedOutput.Add($This.Text.Substring($LastMatchEnd+1, ($MatchStart - ($LastMatchEnd+1))), $ForegroundColor, $BackgroundColor)
             }
+
+            $FGMatch = $Match.Groups[2]
+            $BGMatch = $Match.Groups[4]
             
             # If specified reset, or empty color assigning, reset colors
-            if ($Match.Groups[2] -ilike 'reset' -or $Match.Length -eq 3) {
+            if ($FGMatch -ilike 'reset' -or $Match.Length -eq 3) {
                 $ForegroundColor = $BackgroundColor = $null;
+            } elseif (@($FGMatch, $BGMatch) -like 'highlight') {
+                # Use Foreground color as Background
+                # And find the best foreground color to highlight
+                
+                # If FG color is 'highlight', highlight it based on previous color
+                if ($FGMatch -like 'highlight') {
+                    $LastColors = $CreatedOutput.GetLastColor();
+                    $LastForeground = $LastColors.Foreground
+
+                    # ToString() the Color, as it may be Enum Color
+                    # But first, convert color to ConsoleColor to be certain the full name is available
+                    $Contrast = [PowerIO]::ContrastColors[([System.ConsoleColor]$LastForeground).ToString()]
+
+                    $ForegroundColor = $Contrast
+                    $BackgroundColor = $LastForeground
+
+                # Else if it's the BG Color that's 'highlight', check FG color exists
+                } elseif ($FGMatch.Length -ge 1) {
+                    # Same as above, convert to ConsoleColor so we have the full color name and not partial
+                    $Contrast = [PowerIO]::ContrastColors[([System.ConsoleColor]$FGMatch.Value).ToString()]
+                    $ForegroundColor = $Contrast
+                    $BackgroundColor = $FGMatch
+                }
             } else {
-                $ForegroundColor = $Match.Groups[2]
-                $BackgroundColor = $Match.Groups[4]
+                $ForegroundColor = $FGMatch
+                $BackgroundColor = $BGMatch
             }
             $LastMatchEnd = $MatchEnd
         }
@@ -206,12 +232,11 @@ class OutputText {
     }
     
     [void] Display([boolean]$NewLine) {
-        #$this.NewDisplay($NewLine)
         $LastPiece = $null
         foreach ($Piece in $this.Pieces) {
             # Skip Empty pieces (Typically first piece is empty)
             if ($Piece.IsEmpty()) { continue }
-
+        
             if ($this.IsColorInheriting() -and $LastPiece -ne $null) {
                 $fg = $LastPiece.ForegroundColor
                 $bg = $LastPiece.BackgroundColor
@@ -230,84 +255,41 @@ class OutputText {
         Write-Host -NoNewline:(-not $NewLine)
     }
     
-    
-    # Testing more efficient display methods (I don't think this is it)
-    hidden [void] NewDisplay([boolean]$NewLine) {
-        [Collections.Generic.List[Collections.Generic.List[OutputPiece]]] $collections = @()
-        $lastPiece = $null
-        #Write-Host "Displaying... Inheriting: $($this.IsColorInheriting())"
-        foreach ($Piece in $this.Pieces) {
-          #Write-Host "New display $($lastPiece -ne $null)"
-            if ($lastPiece -ne $null) {
-                $FGEqual = ($lastPiece.ForegroundColor -eq $Piece.ForegroundColor) -or ($Piece.HasForegroundColor() -eq $false -and $this.IsColorInheriting())
-                $BGEqual = ($lastPiece.BackgroundColor -eq $Piece.BackgroundColor) -or ($Piece.HasBackgroundColor() -eq $false -and $this.IsColorInheriting())
-                
-                if ($BGEqual -eq $true -and $FGEqual -eq $true) {
-                    $collections[$collections.Count-1].Add($Piece)
-                } else {
-                    if ($this.IsColorInheriting()) {
-                        if ($Piece.HasBackgroundColor() -ne $true) { $Piece.BackgroundColor = $lastPiece.BackgroundColor }
-
-                        if ($Piece.HasForegroundColor() -ne $true) { $Piece.ForegroundColor = $lastPiece.ForegroundColor }
-                    }
-                    $array = [Collections.Generic.List[OutputPiece]] @()
-                    $array.Add($Piece)
-                    $collections.Add($array)
-                }
-            }
-            
-            $lastPiece = $Piece    
-            if ($collections.Count -eq 0) {
-                $array = [Collections.Generic.List[OutputPiece]] @()
-                $array.Add($Piece)
-                $collections.Add($array)
-            }
-        }
-        #Write-Host $collections
-        $lastCollection = $null
-        foreach ($collection in $collections) {
-            $settings = @{
-                ForegroundColor = if ($this.IsColorInheriting()) { $collection[0].ForegroundColor } else { $collection[0].GetForegroundColor() };
-                BackgroundColor = if ($this.IsColorInheriting()) { $collection[0].BackgroundColor } else { $collection[0].GetBackgroundColor() };            
-                NoNewLine = $true;
-            }
-            Write-Host ($collection.Text -join '') @settings
-            
-            $lastCollection = $collection
-        }
-
-        Write-Host -NoNewline:(-not $NewLine)
-    }
-
+    # Unused method ; was an attempt at grouping matching colored text for performance
+    # If lots of pieces are defined individually but all match, this method may be quicker
+    # This precomputes everything, then displays, thus eliminating delay mid display and pushing it all before
     [void] QuickDisplay([boolean]$NewLine) {
-        $lastbg = $lastfg = $null
-        $MatchingPieces = $null
-        $Collections = [System.Collections.ArrayList]@()
-        $PiecesCount = $this.Pieces.Count
-        for ($i = 0; $i -lt $PiecesCount; $i++) {
+        $Collections = @()
+        for ($i = 0; $i -lt $this.Pieces.Count; $i++) {
             $Current = $this.Pieces[$i]
+            $MatchingPieces = $null
             while (($NextPiece = $this.Pieces[$i+1]) -ne $null) {
-                if (-not $NextPiece.HasColorSet() -or $Current.MatchesColor($NextPiece)) {
+                if ($Current.MatchesColor($NextPiece) -or ($this.IsColorInheriting() -and -not $NextPiece.HasColorSet())) {
                     if ($MatchingPieces -eq $null) {
-                        $MatchingPieces = @($Current, $NextPiece)
+                        $MatchingPieces = @($Current, $NextPiece); # Bundling Pieces
                     } else {
-                        $MatchingPieces += $NextPiece
+                        $MatchingPieces += $NextPiece; # Adding Piece to bundle
                     }
+                    $i++
+                } else {
+                    break;
                 }
-                $i++
             }
 
             if ($MatchingPieces -ne $null) {
-                $Collections.Insert($Collections.Count, $MatchingPieces)    
+                $Collections += ,$MatchingPieces; # Adding MatchingPieces bundle
             } else {
-                $Collections.Add($Current)
+                $Collections += $Current; # Adding Single Piece
             }
         }
-
-        foreach ($Piece in $this.Pieces) {
-            $lastbg = $Piece.GetBackgroundColor()
-            $lastfg = $Piece.GetForegroundColor()
+        
+        foreach ($Thing in $Collections) {
+            # If Singular, $Thing[0] is the object, if a List then $Thing[0] is the first
+            # Same line works for both types of data
+            Write-Host ($Thing.Text -join '') -ForegroundColor $Thing[0].ForegroundColor -BackgroundColor $Thing[0].BackgroundColor -NoNewline
         }
+
+        if ($NewLine) { Write-Host "" } # Newline at the end
     }
 
     [void] Display() {
@@ -340,6 +322,40 @@ class OutputText {
         $cloned.PiecesInheritColor = $this.PiecesInheritColor
 
         return $cloned
+    }
+
+    [Hashtable] GetLastColor() {
+        if ($this.IsColorInheriting()) {
+            $AllPieces = $this.GetPieces()
+            $LastColor = @{Foreground=$null;Background=$null}
+            for ($i = $AllPieces.Count - 1; $i -gt 0; $i--) {
+                $CurrentPiece = $AllPieces[$i]
+
+                # Don't overwrite as we go backwards
+                if ($LastColor.Foreground -eq $null -and $CurrentPiece.HasForegroundColor()) {
+                    $LastColor.Foreground = $CurrentPiece.GetForegroundColor()
+                }
+                
+                # Same as above
+                if ($LastColor.Background -eq $null -and $CurrentPiece.HasBackgroundColor()) {
+                    $LastColor.Background = $CurrentPiece.GetBackgroundColor()
+                }
+
+                # Don't return until we find both, otherwise run til the end and return what we have
+                if ($LastColor.Background -ne $null -and $LastColor.Foreground -ne $null) {
+                    return $LastColor
+                }
+            }
+
+            # If found none, use this method to get the 'default' color for the environment
+            if ($LastColor.Foreground -eq $null) { $LastColor.Foreground = $this.GetLastPiece().GetForegroundColor() }
+            if ($LastColor.Background -eq $null) { $LastColor.Background = $this.GetLastPiece().GetBackgroundColor() }
+
+            return $LastColor
+        } else {
+            $LastPiece = $this.GetLastPiece()
+            return @{Foreground=$LastPiece.GetForegroundColor(); Background=$LastPiece.GetBackgroundColor()}
+        }
     }
 }
 
@@ -404,7 +420,8 @@ class OutputPiece {
     }
 
     [boolean] MatchesColor([OutputPiece]$Other) {
-        return ($this.GetForegroundColor() -eq $Other.GetForegroundColor()) -and ($this.GetBackgroundColor() -eq $Other.GetBackgroundColor())
+        return ($this.HasColorSet() -eq $False -and $Other.HasColorSet() -eq $False) -or 
+                (($this.GetForegroundColor() -eq $Other.GetForegroundColor()) -and ($this.GetBackgroundColor() -eq $Other.GetBackgroundColor()))
     }
 
     [boolean] HasForegroundColor() {
