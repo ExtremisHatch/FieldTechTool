@@ -4,6 +4,13 @@
 
 #>
 
+class InputTools {
+    static [Hashtable[]] $ALTERNATING_STYLE = @(@{FG='yellow';BG='darkgray';LeftSym=([char]9496).ToString();RightSym=([char]9484).ToString()}, 
+                        @{FG='Black'; BG='yellow'; LeftSym=([char]9488).ToString(); RightSym=([char]9492).ToString()})
+}
+
+
+
 function HandleTextTypesOutput {
 <#
     .SYNOPSIS
@@ -59,6 +66,7 @@ function QueryUser {
     }
 }
 
+
 function QueryUserSelection {
 <#
     .SYNOPSIS
@@ -68,15 +76,31 @@ function QueryUserSelection {
         [Parameter(Mandatory, Position=0)] $Question,
         [Parameter(Mandatory)][Object[]] $Answers,
         $AnswerText="Selection: ",
-        $InvalidSelectionText="&[red;highlight]Invalid selection&[red]... Please try again"
+        $InvalidSelectionText="&[red;highlight]Invalid selection&[red]... Please try again",
+        [Switch] $NoQuestionSymbol # Toggle for automatic Question Symbol & alignment
     )
+
+    # Before we display question, should we be aligning it?
+    if (-not $NoQuestionSymbol) {
+        ## Additional offset from just Key Length
+        ## This is the Symbol on left & right, along with space between Key & it's value
+        #$AdditionalOffset = 3; # Set to 0
+        HandleTextTypesOutput -Text "&[gray]$([char]10067)" -NoNewline    
+    }
 
     # Display Question
     HandleTextTypesOutput -Text $Question #-NoNewline
 
     # Print Out Labelled Answers
+    
+
     $choice = 0;
-    $Answers | % {$choice++; Write-Host -NoNewline -ForegroundColor:$(@("Gray","White")[$choice%2]) "[$($choice)] "; HandleTextTypesOutput -Text $_; }
+    $Answers | % {$choice++;
+                  $Option = [InputTools]::ALTERNATING_STYLE[$choice % 2] 
+                  HandleTextTypesOutput -NoNewline -Text ("&[$SymColor;$($Option.BG)]$($Option.LeftSym)&[$($Option.FG);$($Option.BG)]" `
+                                                       + "$choice" `
+                                                       + "&[$($Option.FG);$($Option.BG)]$($Option.RightSym)"); 
+                  HandleTextTypesOutput -Text " $_" ; }
 
     Write-Host "`n" -NoNewline # NewLine prefixed before; NoNewLine for our answer
 
@@ -107,15 +131,36 @@ function QueryUserKeySelection {
         $Question, 
         [KeySelection[]]$Selections, 
         $AnswerText="Selection: ",
-        $InvalidSelectionText="&[red;highlight]Invalid selection&[red]... Please try again"
+        $InvalidSelectionText="&[red;highlight]Invalid selection&[red]... Please try again",
+        [Switch] $NoQuestionSymbol # Toggle for automatic Question Symbol & alignment
     )
     
-    HandleTextTypesOutput -Text $Question
+    # Remove Keys color, because well... they dont need color
+    $Keys = $Selections | % { [ColoredText]::GetUncoloredText($_.Key) }
+    $MaxKeyLength = ($Keys | Select-Object -ExpandProperty Length | Sort-Object -Descending)[0]
+
     
-    $Keys = $Selections | % { $_.Key }
+    # Before we display question, should we be aligning it?
+    if (-not $NoQuestionSymbol) {
+        ## Additional offset from just Key Length
+        ## This is the Symbol on left & right, along with space between Key & it's value
+        #$AdditionalOffset = 3; # Set to 0
+        HandleTextTypesOutput -Text "&[gray]$([char]10067)" -NoNewline    
+    }
+
+    # Display the Question
+    HandleTextTypesOutput -Text $Question
 
     $index = 0;
-    $Selections | % {$index++; Write-Host "[$($_.Key)] " -ForegroundColor:@("Gray","White")[$index%2] -NoNewline; HandleTextTypesOutput -Text $_.Name }
+    $Selections | % { $index++; 
+                      $Offset = $MaxKeyLength - [ColoredText]::GetUncoloredText($_.Key).Length
+                      $Option = [InputTools]::ALTERNATING_STYLE[$index % 2]
+                      HandleTextTypesOutput -NoNewline -Text ("&[$($Option.FG);$($Option.BG)]$($Option.LeftSym)&[$($Option.FG);$($Option.BG)]" `
+                                                       + "$($_.Key)$(' ' * $Offset)" `
+                                                       + "&[$($Option.FG);$($Option.BG)]$($Option.RightSym)");
+                      HandleTextTypesOutput -Text " $($_.Name)" }
+
+    Write-Host "`n" -NoNewline # NewLine prefixed before; NoNewLine for our answer
 
     $Response = $null;
     while ($Response -notin $Keys) {
@@ -145,7 +190,15 @@ class KeySelection {
     }
 
     Run() {
-        $this.Function.Invoke()
+        try {
+            $this.Function.Invoke()
+        } catch {
+            # Error[0] should be the above line, $this.Function.Invoke()
+            # Thus Error[1] is the actual error
+            $Issue = $Error[1]
+            HandleTextTypesOutput "&[red]Error within KeySelection Function '$($this.Name)&[red]': "
+            [PowerIO]::DisplayError($Issue)
+        }
     }
 }
 

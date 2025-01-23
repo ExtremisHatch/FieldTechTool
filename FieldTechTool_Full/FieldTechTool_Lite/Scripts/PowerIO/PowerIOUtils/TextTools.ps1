@@ -5,6 +5,10 @@
 #>
 
 class ColoredText {
+    static [HashTable] $ContrastColors = @{
+        BLACK='WHITE'; DarkBlue='WHITE'; DarkGreen='WHITE'; DarkCyan='WHITE'; DarkRed='WHITE'; DarkMagenta='WHITE'; DarkYellow='WHITE';
+        Gray='WHITE'; DarkGray='WHITE'; Blue='WHITE'; Green='BLACK'; Cyan='BLACK'; Red='WHITE'; Magenta='WHITE'; Yellow='BLACK'; White='BLACK';
+    }
 
     # I've actually impressed myself with the creation of this regex
     # I am able to pull colors from string utilizing 'groups' from the regex
@@ -41,6 +45,37 @@ class ColoredText {
 
         $Uncolored += $TextValue.Substring($LastIndex+1)
         return $Uncolored;
+    }
+
+    static [Hashtable[]] GetColorDefinitions($ColoredText) {
+        $TextValue = if ($ColoredText -is [ColoredText]) { $ColoredText.Text } elseif ($ColoredText -is [String]) { $ColoredText } else { throw "Unsupported type '$($ColoredText.GetType())' for [ColoredText]::GetUncoloredText"}
+
+        $Matches = (Select-String -Pattern ([ColoredText]::RegexFormat) -InputObject $TextValue -AllMatches).Matches
+
+        $Definitions = @()
+        $TotalOffset = 0
+
+        $Matches | % { $Definitions += @{Value=$_.Value;Index=$_.Index}; $TotalOffset += $_.Length }
+
+        $Definitions += @{TotalOffset=$TotalOffset}
+
+        return $Definitions
+    }
+
+    static [String] InsertColorDefinitions([String] $Text, [Hashtable[]] $Definitions) {
+        $Count = $Definitions.Count - 2
+        $TotalOffset = $Definitions[$Count+1].TotalOffset
+        $Result = $Text
+        for ($i = $Count; $i -ge 0; $i--) {
+            $Data = $Definitions[$i]
+            $TotalOffset -= $Data.Value.Length
+            $OffsetIndex = $Data.Index - $TotalOffset
+            
+            #Write-Host "Inserting '$($Data.Value)' at index $OffsetIndex (Original: $($Data.Index))"
+            $Result = $Result.Insert($OffsetIndex, $Data.Value)
+        }
+
+        return $Result
     }
 
     Display([boolean] $Newline=$True) {
@@ -89,7 +124,7 @@ class ColoredText {
 
                     # ToString() the Color, as it may be Enum Color
                     # But first, convert color to ConsoleColor to be certain the full name is available
-                    $Contrast = [PowerIO]::ContrastColors[([System.ConsoleColor]$LastForeground).ToString()]
+                    $Contrast = [ColoredText]::ContrastColors[([System.ConsoleColor]$LastForeground).ToString()]
 
                     $ForegroundColor = $Contrast
                     $BackgroundColor = $LastForeground
@@ -97,7 +132,7 @@ class ColoredText {
                 # Else if it's the BG Color that's 'highlight', check FG color exists
                 } elseif ($FGMatch.Length -ge 1) {
                     # Same as above, convert to ConsoleColor so we have the full color name and not partial
-                    $Contrast = [PowerIO]::ContrastColors[([System.ConsoleColor]$FGMatch.Value).ToString()]
+                    $Contrast = [ColoredText]::ContrastColors[([System.ConsoleColor]$FGMatch.Value).ToString()]
                     $ForegroundColor = $Contrast
                     $BackgroundColor = $FGMatch
                 }
@@ -583,6 +618,22 @@ function VisualTestWhiteboard() {
     $wb.newdisplay()
 }
 
+function VisualTestDotBlock() {
+    $Colors = [System.ConsoleColor]::GetValues([System.ConsoleColor])
+    
+    $DotWidth = 2;
+
+    foreach ($col in $Colors) {
+        
+        0..($DotWidth-1) | % {
+            foreach ($col2 in $Colors) {
+                Write-Host -NoNewline "$("$([char]9617)" * ($DotWidth*2))" -ForegroundColor $col -BackgroundColor $col2; Write-Host " " -NoNewline;
+            }
+        Write-Host "";
+        }
+        Write-Host "";
+    }
+}
 
 function VisualTestTextTools() {
     # Logging time taken
@@ -597,11 +648,12 @@ function VisualTestTextTools() {
     
     $Colors = [System.ConsoleColor]::GetValues([System.ConsoleColor])
     foreach ($col in $Colors) {
-        $RainbowOutput.Add("[]").Background($col) > $null
+        $RainbowOutput.Add("Hello").Background($col) > $null
         $RainbowText.Add("[]").Foreground($col) > $null
     
         foreach ($col2 in $Colors) {
-            $OppositeTest.Add("[]").Foreground($col2).Background($col).NO()
+            $OppositeTest.Add("Hello").Foreground($col2).Background($col).NO()
+            $OppositeTest.Add(" ").NO()
         }
         $OppositeTest.NewLine().NO()
     }
