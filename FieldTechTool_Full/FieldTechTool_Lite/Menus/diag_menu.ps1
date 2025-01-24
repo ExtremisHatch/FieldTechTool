@@ -86,7 +86,7 @@ function Show-DiagMenu {
 
                                 [PowerIO]::DisplayText("&[green]Found usage in the last &[yellow]$DaysSince &[green]days: ")
                                 [PowerIO]::DisplayText("`t&[yellow]File Modified: &[white;darkgray]$($ModifiedFile.FullName)")
-                               [PowerIO]::DisplayText("`t&[yellow]Modified At: &[white;darkgray]$($ModifiedFile.LastWriteTime.ToString('hh:mm:ss tt dd/MM/yyyy'))")
+                                [PowerIO]::DisplayText("`t&[yellow]Modified At: &[white;darkgray]$($ModifiedFile.LastWriteTime.ToString('hh:mm:ss tt dd/MM/yyyy'))")
                             }
 
                             PauseUser
