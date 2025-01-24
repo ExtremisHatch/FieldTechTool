@@ -41,7 +41,7 @@ function Show-MainMenu {
                                 [PowerIO]::DisplayText("&[green]Using Lite Version")
                             }
                             else {
-                                [PowerIO]::DisplayText("&[red]Add-ons package not in Full version folder. This needs to be placed in the proper folder" -ForegroundColor Red
+                                [PowerIO]::DisplayText("&[red]Add-ons package not in Full version folder. This needs to be placed in the proper folder")
                                 Start-Sleep -Seconds 1.5
                                 Clear-Host
                             }
