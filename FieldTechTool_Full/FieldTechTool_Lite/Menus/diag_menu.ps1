@@ -10,7 +10,7 @@ function Show-DiagMenu {
     $Selections = @()
 
     $Selections += [KeySelection]::new('1', "&[green]Gather summary info like PC name, IP, OS, etc.",
-                        {   Write-Host 'Gathering summary info' -ForegroundColor Green
+                        {   [PowerIO]::DisplayText('&[green]Gathering summary info')
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             # An example of running an ad-hoc function in a separate process and ensuring no other commmands are supplied to possible elevated prompt
@@ -29,20 +29,20 @@ function Show-DiagMenu {
                                 }" });
                             
     $Selections += [KeySelection]::new('2', "&[green]Run a user simulation on the system **Output in Results folder**",
-                        {   Write-Host 'Triggered user simulation' -ForegroundColor Green
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]user simulation')
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Invoke-SimulatorController });
 
     $Selections += [KeySelection]::new('3', "&[green]Gather system logs. **Output in Results folder**",
-                        {   Write-Host 'Triggered system logs' -ForegroundColor Green
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]Triggered system logs')
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Show-LogMenu });
 
     $Selections += [KeySelection]::new('4', "&[green]Query Users Last Desktop Usage",
                         {   # This can be made to run separate like above, just doing basic implementation (for now?)
-                            Write-Host 'Querying users desktop usage' -ForegroundColor Green
+                            [PowerIO]::DisplayText('&[green]Querying users desktop usage')
                             Start-Sleep -Seconds 1.5
                             Clear-Host
 
@@ -64,7 +64,7 @@ function Show-DiagMenu {
     $Selections += [KeySelection]::new('5', "&[green]Check Drives for usage in the last 180 days",
                         {   # Same as above, unsure on how to best implement for I.T usage
                             # May be a good candidate for the separate process workflow as seen for Summary Info
-                            Write-Host 'Querying local drives for usage' -ForegroundColor Green
+                            [PowerIO]::DisplayText('&[green]Querying local drives for usage')
                             Start-Sleep -Seconds 1.5
                             Clear-Host
 
