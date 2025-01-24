@@ -16,5 +16,8 @@ Set-Location $PSScriptRoot
 Import-Module -Force "$PSScriptRoot\Scripts\PowerIO\PowerIO.psd1"
 . .\Menus\main_menu.ps1
 
+$FTTTitle = "&[red;highlight]FIELD`n    &[red;highlight]TECH`n       &[red;highlight]TOOL"
+[PowerIO]::DisplayText([TextStyler]::BoxText($FTTTitle, [TextStyler]::BOX_STYLES.DOTTED, "yellow;red")+"`n")
+
 # Main menu
 Show-MainMenu
