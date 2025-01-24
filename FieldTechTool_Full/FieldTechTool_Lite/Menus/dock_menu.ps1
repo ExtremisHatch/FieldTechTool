@@ -9,25 +9,25 @@ function Show-DockMenu {
     $Selections = @()
 
     $Selections += [KeySelection]::new('1', "&[green]G2 Dock firmware/USB update with DisplayLink",
-                        {   Write-Host 'Triggered G2 Dock firmware/USB update with DisplayLink' -ForegroundColor Green
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]G2 Dock firmware/USB update with DisplayLink')
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Update-G2 });
                             
     $Selections += [KeySelection]::new('2', "&[green]G3 Dock monitor firmware/USB update with DisplayLink",
-                        {   Write-Host 'Triggered G3 Dock monitor firmware/USB update with DisplayLink' -ForegroundColor Green
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]G3 Dock monitor firmware/USB update with DisplayLink')
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Update-G3 });
 
     $Selections += [KeySelection]::new('3', "&[green]G4 Dock firmware/USB update with DisplayLink",
-                        {   Write-Host 'Triggered G4 Dock firmware/USB update with DisplayLink' -ForegroundColor Green
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]G4 Dock firmware/USB update with DisplayLink')
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Update-G4 });
 
     $Selections += [KeySelection]::new('4', "&[green]G5 Dock firmware/USB update with DisplayLink",
-                        {   Write-Host 'Triggered G5 Dock firmware/USB update with DisplayLink' -ForegroundColor Green
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]G5 Dock firmware/USB update with DisplayLink')
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Update-G5 });

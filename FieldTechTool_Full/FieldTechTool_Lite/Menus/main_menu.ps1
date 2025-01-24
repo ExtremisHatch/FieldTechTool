@@ -10,62 +10,62 @@ function Show-MainMenu {
     $Selections = @()
 
     $Selections += [KeySelection]::new('1', "&[white;red]User Administration",
-                        {   Write-Host "Navigating to User Administration menu" -ForegroundColor Green
+                        {   [PowerIO]::DisplayText("&[green]Navigating to User Administration menu")
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Show-AdminMenu });
 
     $Selections += [KeySelection]::new('2', "&[green]Machine Diagnostics",
-                        {   Write-Host "Navigating to Diagnostic menu" -ForegroundColor Green
+                        {   [PowerIO]::DisplayText("&[green]Navigating to Diagnostic menu")
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Show-DiagMenu })
 
     $Selections += [KeySelection]::new('3', "&[green]Dock Menu",
-                        {   Write-Host "Navigating to Dock menu." -ForegroundColor Green
+                        {   [PowerIO]::DisplayText("&[green]Navigating to Dock menu.")
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Show-DockMenu })
 
     $Selections += [KeySelection]::new('t', "&[white;darkgray]Toggle Lite/Full mode", 
                         {   if (Test-Path -Path "..\Add-ons\") {
-                                Write-Host "Switching to Full version" -ForegroundColor Green
+                                [PowerIO]::DisplayText("&[green]Switching to Full version")
                                 Move-Item ..\Add-ons\ .\Scripts\Executables\
                                 Clear-Host
-                                Write-Host "Using Full Version" -ForegroundColor Green
+                                [PowerIO]::DisplayText("&[green]Using Full Version")
                             }
                             elseif (Test-Path -Path ".\Scripts\Executables\Add-ons") {
-                                Write-Host "Switching to Lite version" -ForegroundColor Green
+                                [PowerIO]::DisplayText("&[green]Switching to Lite version")
                                 Move-Item .\Scripts\Executables\Add-ons\ ..\
                                 Clear-Host
-                                Write-Host "Using Lite Version" -ForegroundColor Green
+                                [PowerIO]::DisplayText("&[green]Using Lite Version")
                             }
                             else {
-                                Write-Host "Add-ons package not in Full version folder. This needs to be placed in the proper folder" -ForegroundColor Red
+                                [PowerIO]::DisplayText("&[red]Add-ons package not in Full version folder. This needs to be placed in the proper folder" -ForegroundColor Red
                                 Start-Sleep -Seconds 1.5
                                 Clear-Host
                             }
                         })
 
     $ExitSelection = [KeySelection]::new('q', "&[red]Exit",
-                        {   Write-Host "See you later!" -ForegroundColor Yellow
+                        {   [PowerIO]::DisplayText("&[yellow]See you later!")
                             Start-Sleep -Seconds 1.5
                             Clear-Host })
     $Selections += $ExitSelection
 
     $Selections += [KeySelection]::new('rm', "&[white;darkred]Erase all files and folders in this directory for cleanup",
-                        {   Write-Host "Erasing this application's folder and contents" -ForegroundColor Red
-                            Write-Host "Are you sure? (y/n)"
-                            $erase = Read-Host "Enter your choice"
+                        {   [PowerIO]::DisplayText("&[red]Erasing this application's folder and contents")
+                            [PowerIO]::DisplayText("&[yellow]Are you sure?")
+                            $erase = QueryUser -AnswerRequired -Question "Enter your choice (&[green]y&[]/&[red]n&[])"
                             if ($erase -eq 'y') {
-                                Write-Host "Erasing all files and folders in this directory and exiting." -ForegroundColor Red
+                                [PowerIO]::DisplayText("&[red]Erasing all files and folders in this directory and exiting.")
                                 Start-Sleep -Seconds 1.5
                                 Clear-Host
                                 Remove-Item -Path .\* -Recurse -Force
                                 exit
                             }
                             else {
-                                Write-Host "Returning to main menu" -ForegroundColor Green
+                               [PowerIO]::DisplayText("&[green]Returning to main menu")
                                 Start-Sleep -Seconds 1.5
                                 Clear-Host
                             }
