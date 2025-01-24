@@ -12,7 +12,8 @@ class ColoredText {
 
     # I've actually impressed myself with the creation of this regex
     # I am able to pull colors from string utilizing 'groups' from the regex
-    hidden static $RegexFormat = "(&\[)([A-z]*)(;?)([A-z]*)(\])"
+    # Specified a-zA-Z as A-z will capture other chars, such as additional ']' on the end and error
+    hidden static $RegexFormat = "(&\[)([a-zA-Z]*)(;?)([a-zA-Z]*)(\])"
     
     # Format:
     # Foreground color

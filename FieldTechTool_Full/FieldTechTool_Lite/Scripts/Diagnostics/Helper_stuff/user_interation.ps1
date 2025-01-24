@@ -43,26 +43,12 @@ function Set-Sample_file {
 # function to write our manifesto
 function Write-Manifesto {
     # Using this article for inspiration with keys: https://admhelp.microfocus.com/uft/en/all/VBScript/Content/html/4b032417-ebda-4d30-88a4-2b56c24affdd.htm
-    $wshell.SendKeys('^(+{END})')
-    $wshell.SendKeys('{END}')
-    $wshell.SendKeys('Our values: {ENTER}')
-    $wshell.SendKeys('Doing our homework. {ENTER}')
-    $wshell.SendKeys('Innovating all that we do. {ENTER}')
-    $wshell.SendKeys('Acting like Owners. {ENTER}')
-    $wshell.SendKeys('Encouraging a flat, connected organization. {ENTER}')
-    $wshell.SendKeys('Engaging great people who make a difference. {ENTER}')
-    $wshell.SendKeys('Thinking globally, acting locally. {ENTER}')
-    $wshell.SendKeys('Achieving no harm. {ENTER}')
-    $wshell.SendKeys('Ensuring cost effective, efficient delivery. {ENTER}')
-    $wshell.SendKeys('Being unconditionally honest. {ENTER}')
-    $wshell.SendKeys('Nurturing long-term relationships. {ENTER}')
-    $wshell.SendKeys('Living our commitments with integrity. {ENTER}')
-    $wshell.SendKeys('{ENTER}')
-    $wshell.SendKeys('Our motto: {ENTER}')
-    $wshell.SendKeys('We believe in exceptional ideas delivered with exceptional service. {ENTER}')
-    $wshell.SendKeys('{ENTER}')
-    $wshell.SendKeys('^s')
-    
+    $KeyStrokes = @('^(+{END})','{END}','Our values: {ENTER}','Doing our homework. {ENTER}','Innovating all that we do. {ENTER}','Acting like Owners. {ENTER}',
+                    'Encouraging a flat, connected organization. {ENTER}', 'Engaging great people who make a difference. {ENTER}', 'Thinking globally, acting locally. {ENTER}',
+                    'Achieving no harm. {ENTER}','Ensuring cost effective, efficient delivery. {ENTER}','Being unconditionally honest. {ENTER}','Nurturing long-term relationships. {ENTER}',
+                    'Living our commitments with integrity. {ENTER}','{ENTER}','Our motto: {ENTER}','We believe in exceptional ideas delivered with exceptional service. {ENTER}','{ENTER}', '^s')
+
+    $KeyStrokes | % { $wshell.SendKeys($_); Start-Sleep -Milliseconds 200; }
 }
 
 function Write-Edge {
