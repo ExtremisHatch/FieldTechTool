@@ -99,20 +99,22 @@ function FindRelevantGPUDrivers {
     param([switch] $OutputProgress)
 
     if ($OutputProgress) {
-        Write-Host "Gathering local device data..." -ForegroundColor Gray
+        [PowerIO]::DisplayText("&[white;darkgray]GPU Driver Check")
+        [PowerIO]::DisplayText("`t&[gray]Gathering local device data...")
     }
     $Device = GetDriverDeviceInformation
     
     if ($OutputProgress) {
-        Write-Host "Loading NVidia GPU Configurations..." -ForegroundColor Gray
+        [PowerIO]::DisplayText("`t&[gray]Loading NVidia GPU Configurations...")
     }
+
     $GPUList = GetNvidiaGPUList
 
     # Initial Filter to relevant OS results (Example: "Windows 11", "Windows 10 32-bit")
     $OSFilter = if ($Device.WindowsVersion.EndsWith('11')) { $Device.WindowsVersion } else { "$($Device.WindowsVersion) $($Device.OSArchitecture)" }
 
     if ($OutputProgress) {
-        Write-Host "Filtering through $($GPUList.Count) configurations..." -ForegroundColor Gray
+        [PowerIO]::DisplayText("`t&[gray]Filtering through $($GPUList.Count) configuration(s)...")
     }
 
     $GPUDriverResults = @()
@@ -192,7 +194,7 @@ function FindRelevantGPUDrivers {
     }
 
     if ($OutputProgress) {
-        Write-Host "Finished with $($GPUDriverResults.Count) Driver result(s)" -ForegroundColor Gray
+        [PowerIO]::DisplayText("&[gray]`tFinished with $($GPUDriverResults.Count) Driver result(s)")
     }
 
     # Utilize 'Unary Operator' to ensure an Array is returned, even when there's only 1 Object
@@ -207,9 +209,9 @@ function ProvideUserGPUDriverOptions {
     $GPUDrivers = [System.Array] (FindRelevantGPUDrivers -OutputProgress)
     
     if ($GPUDrivers.Count -eq 0) {
-        Write-Host "Couldn't find any Drivers online, this may be an error!"
+        [PowerIO]::DisplayText("&[red]Couldn't find any Drivers online, this may be an error!")
     } else {
-        Write-Host "Found $($GPUDrivers.Count) potential driver(s)..." -ForegroundColor Gray
+        [PowerIO]::DisplayText("&[gray]Found &[highlight]$($GPUDrivers.Count)&[gray] potential driver(s)!")
     
         $Device = GetDriverDeviceInformation
     
@@ -224,26 +226,26 @@ function ProvideUserGPUDriverOptions {
         $OutdatedType = if ($Outdated) { if ($LatestAvailable.Major -gt $CurrentVersion.Major) {"Major"} else {"Minor"} } else { $null }
     
         # List out current details for user
-        Write-Host "`nCurrent GPU: $($Device.GPUName)" -ForegroundColor Yellow
+        [PowerIO]::DisplayText("`n&[yellow]Current GPU: &[highlight]$($Device.GPUName)")
     
         # If Outdated, don't print new line yet
-        Write-Host "`tDriver Version: $($Device.ShortGPUDriverVersion)" -ForegroundColor Yellow -NoNewline:$Outdated 
+        [PowerIO]::DisplayText("`t&[yellow]Driver Version: &[highlight]$($Device.ShortGPUDriverVersion)", -not $Outdated)
     
         if ($Outdated) {
-            Write-Host " [Potential $OutdatedType Update Available]" -ForegroundColor Magenta
+            [PowerIO]::DisplayText(" &[gray][&[magenta]Potential &[highlight]$OutdatedType&[magenta] Update Available&[gray]]")
         }
     
-        Write-Host "`nDrivers Available:"
+        [PowerIO]::DisplayText("`n&[white;darkgray]Drivers Available:")
         for ($i=0; $i -lt $GPUDrivers.Count; $i++) {
             $Driver = $GPUDrivers[$i]
-            Write-Host "[$($i+1)] $($Driver.ProductName)" -ForegroundColor Yellow
-            Write-Host "`t$($Driver.DriverName) [Version: $($Driver.DriverVersion)]"
-            Write-Host "`tDownload URL [$($Driver.DownloadSize)]: $($Driver.DownloadURL)"
+            [PowerIO]::DisplayText("[$($i+1)] &[yellow]$($Driver.ProductName)")
+            [PowerIO]::DisplayText("`t$($Driver.DriverName) &[gray][Version: $($Driver.DriverVersion)]")
+            [PowerIO]::DisplayText("`tDownload URL &[gray][$($Driver.DownloadSize)]&[]: $($Driver.DownloadURL)")
         }
     
-        $DownloadDriver = @("Y","YES") -contains (Read-Host "`nWould you like to download a listed GPU Driver? (Y/n)")
+        $DownloadDriver = @("Y","YES") -contains (QueryUser -AnswerRequired -Question "`n&[yellow]Would you like to download a listed GPU Driver? &[](&[green]Y&[]/&[red]n&[])" )
         if ($DownloadDriver) {
-            while (($DriverIndex = Read-Host "Please input the Number of the GPU Driver you wish to download") -ne $null) {
+            while (($DriverIndex = QueryUser -AnswerRequired -Question "Please input the Number of the GPU Driver you wish to download") -ne $null) {
                 # Ensure it's a number
                 if ($DriverIndex -notmatch "^(\d)*$") { continue; }
                 
@@ -268,13 +270,13 @@ function ProvideUserGPUDriverOptions {
                 New-Item -Path $OutputPath -ItemType "Directory" > $null
             }
     
-            Write-Host "Downloading `"$($SelectedDriver.ProductName)`" driver [$($SelectedDriver.DownloadSize)]"
-            Write-Host "`tThis may take some time..." -ForegroundColor Gray
+            [PowerIO]::DisplayText("&[yellow]Downloading `"&[highlight]$($SelectedDriver.ProductName)&[yellow]`" driver &[gray][$($SelectedDriver.DownloadSize)]")
+            [PowerIO]::DisplayText("`t&[gray]This may take some time...")
     
             Invoke-WebRequest -Uri $DownloadURL -OutFile $DriverLocation
     
-            Write-Host "Download complete!" -ForegroundColor Green
-            Write-Host "Driver Location: $((Get-Item $DriverLocation).FullName)"
+            [PowerIO]::DisplayText("&[green]Download completed!")
+            [PowerIO]::DisplayText("&[yellow]Driver Location: &[gray]$((Get-Item $DriverLocation).FullName)")
         }
     }
 }
