@@ -4,14 +4,19 @@ function GetNvidiaGPUList {
     # Have fun loading this in your browser lol
     $NvidiaGPUListURL = "https://gfwsl.geforce.com/nvidia_web_services/controller.php?com.nvidia.services.Drivers.getMenuArrayProductOperatingSystemMetaData/"
     
-    # GET Request, No UserAgent supplied - Hasn't been blocked (yet)
-    $Request = Invoke-WebRequest -Uri $NvidiaGPUListURL -DisableKeepAlive -Method Get
-
-    # Turn that sweet sweet data into a useable object instead of 20+ MB of text lol
-    $JsonData = $Request.Content | ConvertFrom-Json
-   
-    # Dispose request (cleanup)
-    $Request.Dispose()
+    try {
+        # GET Request, No UserAgent supplied - Hasn't been blocked (yet)
+        $Request = Invoke-WebRequest -Uri $NvidiaGPUListURL -DisableKeepAlive -Method Get
+        # Turn that sweet sweet data into a useable object instead of 20+ MB of text lol
+        $JsonData = $Request.Content | ConvertFrom-Json
+        # Dispose request (cleanup)
+        $Request.Dispose()
+    } catch {
+        $Issue = $_ # Cache issue incase more happen
+        [PowerIO]::DisplayText("&[red]Error whilst connecting to &[green]NVIDIA API&[red]!")
+        [PowerIO]::DisplayError($Issue)
+        return @()
+    }
     
     # JsonObject containing all Product Names (Indexed, and also includes "MethodCalled" member)
     $ProductNames = $JsonData.ProductNames
@@ -171,10 +176,15 @@ function FindRelevantGPUDrivers {
 
         # Based on the response JSon format, if $Response.Success -eq 1, then the below should work
         # $Response.IDS[0].downloadInfo.DownloadURL
-    
-        $Request = Invoke-WebRequest -Uri $NvidiaDriverQueryURL -Method Get -DisableKeepAlive
-        $Response = $Request.Content | ConvertFrom-Json
-
+        try {
+            $Request = Invoke-WebRequest -Uri $NvidiaDriverQueryURL -Method Get -DisableKeepAlive
+            $Response = $Request.Content | ConvertFrom-Json
+        } catch {
+            $Issue = $_ # Cache issue incase more happen
+            [PowerIO]::DisplayText("&[red]Error whilst connecting to &[green]NVIDIA API&[red]!")
+            [PowerIO]::DisplayError($Issue)
+            return @()
+        }
         $DownloadInfo = $Response.IDS[0].downloadInfo
         
         # "The Driver DownloadID details found"
