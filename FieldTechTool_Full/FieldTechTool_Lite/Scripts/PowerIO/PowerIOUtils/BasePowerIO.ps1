@@ -174,7 +174,10 @@ class TextStyler {
 
     static [String] WrapTextCorners([String] $Text, [Int[]] $Corners, $CornerColor="") {
         $TextLength = ([ColoredText]::GetUncoloredText($Text).Split("`n") | Sort-Object { $_.Length } -Descending | Select-Object -First 1).Length
-        return "&[$CornerColor]$([char]$Corners[0])&[]$(' ' * $TextLength)&[$CornerColor]$([char]$Corners[1])&[]`n $Text `n&[$CornerColor]$([char]$Corners[2])&[]$(' ' * $TextLength)&[$CornerColor]$([char]$Corners[3])"
+        
+        $Texts = $Text.Split("`n") | % { $Length = [ColoredText]::GetUncoloredText($_).Length; return (" $_ ")}
+        
+        return "&[$CornerColor]$([char]$Corners[0])&[]$(' ' * $TextLength)&[$CornerColor]$([char]$Corners[1])&[]`n$($Texts -join "`n")`n&[$CornerColor]$([char]$Corners[2])&[]$(' ' * $TextLength)&[$CornerColor]$([char]$Corners[3])"
     }
 
     static [String] BoxText([String] $Text, [Object[]] $Style=[TextStyler]::BOX_STYLES.PLAIN, $BoxColor="") {
@@ -200,11 +203,11 @@ class TextStyler {
         $CornerPiece = [char]$Style[2]
 
         if ($DoBoxColoring) {
-            $horizontalBar = $BoxColorFormat + $CornerPiece + ("$HorizontalPiece" * ($Width + ($PADDING*2))) + $CornerPiece
-            $verticalBar = $BoxColorFormat + $VerticalPiece + "&[$BGCOLOR]" + ($BGCHAR * ($Width + ($PADDING*2))) + $BoxColorFormat + $VerticalPiece
+            $horizontalBar = $BoxColorFormat + $CornerPiece + ("$HorizontalPiece" * ($Width + ($PADDING*2))) + $CornerPiece + "&[]"
+            $verticalBar = $BoxColorFormat + $VerticalPiece + "&[$BGCOLOR]" + ($BGCHAR * ($Width + ($PADDING*2))) + $BoxColorFormat + $VerticalPiece + "&[]"
         } else {
-            $horizontalBar = $CornerPiece + ("$HorizontalPiece" * ($Width + ($PADDING*2))) + $CornerPiece
-            $verticalBar = $VerticalPiece + "&[$BGCOLOR]" + ($BGCHAR * ($Width + ($PADDING*2))) + $VerticalPiece
+            $horizontalBar = $CornerPiece + ("$HorizontalPiece" * ($Width + ($PADDING*2))) + $CornerPiece + "&[]"
+            $verticalBar = $VerticalPiece + "&[$BGCOLOR]" + ($BGCHAR * ($Width + ($PADDING*2))) + $VerticalPiece + "&[]"
         }
         
         #$Result = @($horizontalBar, $verticalBar, $null, $verticalBar, $horizontalBar)
@@ -219,7 +222,7 @@ class TextStyler {
             $PieceLength = [ColoredText]::GetUncoloredText($bit).Length; 
             $RemainingLength = $Width - $PieceLength;
 
-            $TextResult += "&[$BoxColor]$VerticalPiece&[$BGCOLOR]$($BGCHAR * $PADDING)$bit&[$BGCOLOR]$($BGCHAR * $RemainingLength)&[]$($BGCHAR * $PADDING)&[$BoxColor]$VerticalPiece"
+            $TextResult += "&[$BoxColor]$VerticalPiece&[$BGCOLOR]$($BGCHAR * $PADDING)$bit&[$BGCOLOR]$($BGCHAR * $RemainingLength)&[]$($BGCHAR * $PADDING)&[$BoxColor]$VerticalPiece&[]"
         }
         $Result += ($TextResult -join "`n")
         
