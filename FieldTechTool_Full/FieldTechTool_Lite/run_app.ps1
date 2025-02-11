@@ -19,7 +19,7 @@ Import-Module -Force "$PSScriptRoot\Scripts\PowerIO\PowerIO.psd1"
 # Title Text for tool (Shown once, only on start)
 $FTTTitle = "&[red;highlight]FIELD`n     &[red;highlight]TECH`n         &[red;highlight]TOOL"
 # Display the Title Text, with an additional Newline for cleaner separation
-[PowerIO]::DisplayText([TextStyler]::BoxText($FTTTitle, [TextStyler]::BOX_STYLES.DOTTED, "yellow;red")+"`n")
+[PowerIO]::DisplayText([StyledText]::Create($FTTTitle).Box([BoxStyle]::Create([BoxStyle]::DOTTED, "yellow;red",1,";red")).GetText()+"`n")
 
 # Main menu
 Show-MainMenu
