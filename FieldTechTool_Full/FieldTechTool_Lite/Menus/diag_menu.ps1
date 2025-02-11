@@ -5,6 +5,7 @@
 . .\Scripts\Diagnostics\Simulate_Usage.ps1
 . .\Scripts\Diagnostics\gather_logs.ps1
 . .\Scripts\Diagnostics\user_usage.ps1
+. .\Scripts\Diagnostics\network_queries.ps1
 
 function Show-DiagMenu {
     $Selections = @()
@@ -91,6 +92,48 @@ function Show-DiagMenu {
 
                             PauseUser
                             Clear-Host });
+
+    $Selections += [KeySelection]::new('6', "&[green]Query remote Desktop/Server Status & User List",
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]Remote Desktop Query')
+                            Start-Sleep -Seconds 1.5
+                            Clear-Host
+                            
+                            $DesktopName = QueryUser -Question "&[Yellow]What Desktop/Server would you like to query?&[]`n>" -AnswerRequired
+
+                            $Result = QueryNetworkMachine -Server $DesktopName
+
+                            Write-Host "" # Separator
+
+                            [PowerIO]::DisplayText("&[yellow]Status of &[highlight]$DesktopName&[yellow]:")
+                            [PowerIO]::DisplayText("`t&[Gray]Online: &[$(if($Result.Online){'green'}else{'red'})]$($Result.Online)")
+                            [PowerIO]::DisplayText("`t&[Gray]Users: $($Result.Users.Count)")
+
+                            # Uncertain if $Result.Online = $false means no users will show, best just checking if there is users
+                            if ($Result.Users.Count -gt 0) {
+                                $Result.Users | % { 
+                                    
+                                    # Prefix the spacing, as this line is displayed in parts
+                                    [PowerIO]::DisplayText("`t`t", $false)
+
+                                    # When a user is disconnected there is no session name
+                                    if ($_.SessionName -notlike $null) {
+                                        [PowerIO]::DisplayText("&[white;darkgray]$($_.SessionName): ", $false)
+                                    }
+                                    
+                                    # Color for 'State' value, doing inline made it a bit messy
+                                    $StateColor = if($_.State -like 'Active') {'green'} else {'red'}
+
+                                    # Display final part of line
+                                    [PowerIO]::DisplayText("&[white;darkgray]$($_.Username) - &[$StateColor;darkgray]$($_.State)&[] &[gray][Logon: $($_.LogonTime); Idle: $($_.IdleTime); Id: $($_.Id)]") 
+                                }
+                            }
+
+                            Write-Host "`n" # Double Newline separator
+
+                            PauseUser
+                            Clear-Host
+
+                        });
 
     $PreviousMenuSelection = [KeySelection]::new('q', "&[yellow]Previous menu",
                         {   Clear-Host });
