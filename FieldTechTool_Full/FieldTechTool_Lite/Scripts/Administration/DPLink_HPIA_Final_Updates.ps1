@@ -1,12 +1,12 @@
 
 function Update-Common {
-    Write-Host "Updating DisplayLink, HPIA, and Dedicated graphics (for CADs). Final updates will be triggered last" -ForegroundColor Green
+    [PowerIO]::DisplayText("&[green]Updating DisplayLink, HPIA, and Dedicated graphics (for CADs). Final updates will be triggered last")
 
     $disLink = Resolve-Path '.\Scripts\Executables\Common\DisplayLink*.exe'
     $hpia = Resolve-Path '.\Scripts\Executables\Common\hp-hp*.exe'
 
     # Ask the user if this is a remote desktop. If it is, confirm if they want to disable sleep and hibernation
-    $remoteDesktop = Read-Host "Is this a remote desktop? (Y/N)"
+    $remoteDesktop = QueryUser -AnswerRequired -Question "Is this a remote desktop? (&[green]Y&[]/&[red]N&[])"
     if ($remoteDesktop -eq "Y") {
         Disable-Sleep
     }
@@ -28,70 +28,38 @@ function Update-Common {
 function Install-Graphics {
     $GPU_Intensive = Resolve-Path ".\Scripts\Executables\Add-ons\Graphics\GPU_intensive_leased_machine\*.exe"
     $Studio_10 = Resolve-Path ".\Scripts\Executables\Add-ons\Graphics\ZBook_Studio_G10\*.exe"
-    Write-Host "Checking for dedicated graphics prior to running HPIA" -ForegroundColor Green
+    [PowerIO]::DisplayText("&[green]Checking for dedicated graphics prior to running HPIA")
     # Getting Graphics info from machine. Integrated and Dedicated
     $videoControllers = Get-CimInstance -ClassName Win32_VideoController
 
+    $Studio_10_GPUs = @("*RTX 2000*", "*RTX A500*", "*RTX A2000*")
+    $GPU_Intensive_GPUs = @("*RTX 2070*","*RTX A4000*","*Quadro T2000*","*RTX 2080*")
+
+    # Flaw in this is that most devices have onboard graphics alongside dedicated
+    # This for each graphics device, meaning users will almost always get a second message stating
+    # "No dedicated graphics detected" etc
     foreach ($vc in $videoControllers){
-        switch -Wildcard ($vc.Name) {
-             
-            "*RTX 2000*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
+        if (($Studio_10_GPUs | Where-Object { $vc.Name -like $_ }) -ne $null) {
+                [PowerIO]::DisplayText("&[yellow]Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation.")
+                [PowerIO]::DisplayText("&[yellow]Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs.")
                 Start-Process -FilePath $Studio_10
-            }
-              
-            "*RTX A500*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
-                Start-Process -FilePath $Studio_10
-            }
-             
-            "*RTX A2000*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
-                Start-Process -FilePath $Studio_10
-            }
-             
-            "*RTX 2070*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
+        } elseif (($GPU_Intensive_GPUs | Where-Object { $vc.Name -like $_ }) -ne $null) {
+                [PowerIO]::DisplayText("&[yellow]Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation.")
+                [PowerIO]::DisplayText("&[yellow]Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs.")
                 Start-Process -FilePath $GPU_Intensive
-            }
-              
-            "*RTX A4000*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
-                Start-Process -FilePath $Studio_10
-            }
-             
-            "*Quadro T2000*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
-                Start-Process -FilePath $Studio_10
-            }
-             
-            "*RTX 2080*" {
-                Write-Host "Dedicated Graphics detected. Running driver update. Please ensure that you select a clean installation." -ForegroundColor Yellow
-                Write-Host "Make sure to unselect the Nvidia Driver that HPIA will try to install when it runs." -ForegroundColor Yellow
-                Start-Process -FilePath $GPU_Intensive
-            }
-            # Need to make one more for the GPU intensive one. It should be something with RTX2080 in it. 
-            default {
-                Write-Host "No dedicated graphics detected. Continuing with HPIA." -ForegroundColor Green
-            }
+        } else { # Need to make one more for the GPU intensive one. It should be something with RTX2080 in it. 
+                [PowerIO]::DisplayText("&[green]No dedicated graphics detected. Continuing with HPIA.")
         }
     }
-    
 }
 
 # Turn off sleep and hibernation for remote desktops
 function Disable-Sleep {
-    Write-Host "Turning off sleep and hibernation. Primarily for remote desktops" -ForegroundColor Green
+    [PowerIO]::DisplayText("&[green]Turning &[highlight]off&[green] sleep and hibernation. Primarily for remote desktops")
     powercfg -change -standby-timeout-ac 0
     powercfg -change -hibernate-timeout-ac 0
     powercfg -change -monitor-timeout-ac 0
     powercfg -change -disk-timeout-ac 0
-    Write-Host "Sleep and hibernation have been disabled" -ForegroundColor Green
+    [PowerIO]::DisplayText("&[green]Sleep and hibernation have been &[red;highlight]disabled")
     Start-Sleep -Seconds 3
 }

@@ -8,69 +8,61 @@
 . .\Scripts\Administration\usb_activate.ps1
 function Show-AdminMenu {
     $toolRootDirectory = Resolve-Path .
-    do {
-        Write-Host '1. DisplayLink, Graphics, HPIA, and trigger Final Updates'
-        Write-Host '2. Backup user data with Robocopy'
-        Write-Host '3. Disable Sleep and Hibernation on this machine'
-        Write-Host "4. Jack's script for 840 G9 (Intel) Autopilot join"
-        Write-Host "5. Check for GPU Driver Update"
-        Write-Host "6. Check or Enable USB access (will be cleared by policy eventually)"
-        Write-Host 'q. Previous menu'
-        $choice = Read-Host 'Please choose an option'
-        switch ($choice.ToLower()) {
-            '1' { 
-                Write-Host 'Triggered DisplayLink, HPIA, trigger Final Updates' -ForegroundColor Green
-                Start-Sleep -Seconds 1.5
-                Clear-Host
-                Update-Common
-             }
-             '2'{ 
-                Write-Host 'Triggered Robocopy script' -ForegroundColor Green
-                Start-Sleep -Seconds 1.5
-                Clear-Host
-                Invoke-RoboCopy
-                Set-Location $toolRootDirectory
-                Clear-Host
-             }
-             '3' {
-                Disable-Sleep
-             }
-             '4' {
-                Write-Host "Triggered Jack's special script! Will require NuGet provider module. Please accept installation when prompted (Yes, we know the repo is untrusted)!" -ForegroundColor Cyan
-                Start-Sleep -Seconds 1.5
-                Get-JackInfo
-                Clear-Host
-             }
-             '5' {
-                Write-Host "Triggered GPU Driver Update Check" -ForegroundColor Green
-                Start-Sleep -Seconds 1.5
-                Clear-Host
+    
+    $Selections = @()
 
-                # Display driver options to user
-                ProvideUserGPUDriverOptions
+    $Selections += [KeySelection]::new('1', "&[green]DisplayLink, Graphics, HPIA, and trigger Final Updates",
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]DisplayLink, HPIA, trigger Final Updates')
+                            Start-Sleep -Seconds 1.5
+                            Clear-Host
+                            Update-Common });
+                            
+    $Selections += [KeySelection]::new('2', "&[green]Backup user data with Robocopy",
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]Robocopy script')
+                            Start-Sleep -Seconds 1.5
+                            Clear-Host
+                            Invoke-RoboCopy
+                            Set-Location $toolRootDirectory
+                            Clear-Host });
 
-                Read-Host "`nPress enter to continue...";
-                Clear-Host
+    $Selections += [KeySelection]::new('3', "&[green]Disable Sleep and Hibernation on this machine",
+                        {   Disable-Sleep });
 
-             }
-             '6' {
-                Write-Host "Triggered USB access toggling" -ForegroundColor Green
-                Start-Sleep -Seconds 1.5
-                # Toggle USB access
-                Enable_USB
-                Clear-Host
-             }
-             'q' {
-                Clear-Host
-                break
-             }
-            Default {
-                Write-Host 'Invalid option, please try again' -ForegroundColor Red
-                Start-Sleep -Seconds 1.5
-                Clear-Host
-            }
-        }
-    } while (
-        $choice -ne 'q'
-    )
+    $Selections += [KeySelection]::new('4', "&[green]Jack's script for 840 G9 (Intel) Autopilot join",
+                        {   [PowerIO]::DisplayText("&[green]Triggered &[highlight]Jack's special script!`n&[gray]Will require NuGet provider module. Please accept installation when prompted (&[highlight]Yes, we know the repo is untrusted&[gray])!")
+                            Start-Sleep -Seconds 3 # Increased time for longer message reading
+                            Get-JackInfo
+                            Clear-Host });
+
+    $Selections += [KeySelection]::new('5', "&[green]Check for GPU Driver Update",
+                        {   [PowerIO]::DisplayText("&[green]Triggered &[highlight]GPU Driver Update Check")
+                            Start-Sleep -Seconds 1.5
+                            Clear-Host
+
+                            # Display driver options to user
+                            ProvideUserGPUDriverOptions
+
+                            PauseUser
+                            Clear-Host });
+
+    $Selections += [KeySelection]::new('6', "&[green]Check or Enable USB access (will be cleared by policy eventually)",
+                        {   [PowerIO]::DisplayText("&[green]Triggered &[highlight]USB access toggling")
+                            Start-Sleep -Seconds 1.5
+                            Clear-Host
+
+                            # Toggle USB access
+                            Enable_USB
+
+                            PauseUser
+                            Clear-Host });
+
+    $PreviousMenuSelection = [KeySelection]::new('q', "&[yellow]Previous menu",
+                        {   Clear-Host });
+    $Selections += $PreviousMenuSelection
+
+    $Selection = $null
+    while ($Selection -eq $null -or $Selection.Key -ne $PreviousMenuSelection.Key) {
+        $Selection = QueryUserKeySelection -Question "&[yellow;darkgray] Please choose an option &[]`n" -Selections $Selections
+        $Selection.Run()
+    }
 }

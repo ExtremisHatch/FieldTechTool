@@ -7,11 +7,11 @@ function Test-TermBackups {
         #"Germany" = "\\placeholderNas\backups"
     }
     # Prompt the user to select a mapping option or enter a custom one
-    Write-Host "Select a mapping option or enter a custom network path:"
+    [PowerIO]::DisplayText("&[yellow]Select a mapping option or enter a custom network path:")
     foreach ($option in $mappingOptions.GetEnumerator()) {
-        Write-Host "[$($option.Key)]: $($option.Value)"
+        [PowerIO]::DisplayText("&[gray][$($option.Key)]: &[yellow]$($option.Value)")
     }
-    $selectedOption = Read-Host "Enter your choice or a valid custom path."
+    $selectedOption = QueryUser -AnswerRequired -Question "Enter your choice or a valid custom path."
 
     # Check if the user selected a predefined option or entered a custom path
     $networkDriveName = $mappingOptions[$selectedOption]
@@ -19,20 +19,20 @@ function Test-TermBackups {
         $networkDriveName = $selectedOption
     }
 
-    Write-Host "If the network drive, $networkDriveName, is reachable, this application will automatically connect."
+    [PowerIO]::DisplayText("If the network drive, &[highlight]$networkDriveName&[], is reachable, this application will automatically connect.")
     Start-Sleep -Seconds 2
         
     if (Test-Path $networkDriveName) {
-        Write-Host "$networkDriveName is accessible"
+        [PowerIO]::DisplayText("&[highlight]$networkDriveName&[] is &[green]accessible")
         Start-Sleep -Seconds 1.5
         Push-Location -Path $networkDriveName
         Clear-Host
         return $true
         
     } else {
-        Write-Host "$networkDriveName is not accessible" -ForegroundColor Red
-        Write-Host "Please check the name of $networkDriveName, make sure that you can access it with SA credentials, and try again." -ForegroundColor Red
-        Start-Sleep -Seconds 2
+        [PowerIO]::DisplayText("&[highlight]$networkDriveName&[] is &[red]not accessible")
+        [PowerIO]::DisplayText("&[gray]Please check the name of &[highlight]$networkDriveName&[gray], make sure that you can access it with SA credentials, and try again.")
+        Start-Sleep -Seconds 2.5
         Clear-Host
         break
     }
@@ -43,11 +43,11 @@ function Get-TargetDetails {
     if (Test-TermBackups) {
         # After successful mount, Read-Host for backup target's surname and firstname as Surname, Firstname
         # Using string formatting to ENSURE the formatting of Surname, Firstname 
-        $surname = (Get-Culture).TextInfo.ToTitleCase((Read-Host "Please give the target's surname (Ex: Lastname): ").ToLower())
-        $firstname = (Get-Culture).TextInfo.ToTitleCase((Read-Host "Please give the target's first name (Ex: Firstname): ").ToLower())
+        $surname = (Get-Culture).TextInfo.ToTitleCase((QueryUser -AnswerRequired -Question "&[gray]Please provide the target's surname (Ex: Lastname): ").ToLower())
+        $firstname = (Get-Culture).TextInfo.ToTitleCase((QueryUser -AnswerRequired -Question "&[gray]Please provide the target's first name (Ex: Firstname): ").ToLower())
         
         # Read-Host user's folder to backup from the C:\Users
-        $userFolder = Read-Host "Please give the target's home folder from C:\Users Ex: abcd12345 (case-insensitive): "
+        $userFolder = QueryUser -AnswerRequired -Question "&[gray]Please provide the target's home folder from C:\Users Ex: abcd12345 (case-insensitive): "
         $targetFolder = "C:\Users\$userFolder"
 
         # Making folder for termination backups
@@ -57,30 +57,27 @@ function Get-TargetDetails {
             if (-not (Test-Path $directoryPath)) {
                 New-Item -Path $directoryPath -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
             }
-            Write-Host "Directory should have been created"
+            [PowerIO]::DisplayText("&[gray]Directory should have been created")
             # Need second variable to test target folder. Otherwise, a "True " is pushed to the front of the string value.
             $folderExists = Test-Path $targetFolder
-            if ($folderExists) {
-                Write-Host "This is the current target: $targetFolder and the result of the test is $folderExists"
-            }
-            else {
-                Write-Host "This is the current target: $targetFolder and the result of the test is $folderExists"
-            }
+            
+            [PowerIO]::DisplayText("&[gray]This is the current target: &[highlight]$targetFolder&[gray] and the result of the test is &[$(if($folderExists){"green"}else{"red"})]$folderExists")
+            
             Set-Location $directoryPath
-            Write-Host "Should be in the directory and ready to go" -ForegroundColor Green
+            [PowerIO]::DisplayText("&[green]Should be in the directory and ready to go")
             Start-Sleep -Seconds 2
             Clear-Host
             return $targetFolder
         }
         catch {
-            Write-Host "Something went wrong testing access to the user folder. You'll have to start over" -ForegroundColor Yellow
+            [PowerIO]::DisplayText("&[yellow]Something went wrong testing access to the user folder. You'll have to start over")
             Start-Sleep -Seconds 2
             Clear-Host
             break
         }
     }
     else {
-        Write-Host "Something went wrong in the mapping. Returning to Menu." -ForegroundColor Red
+        [PowerIO]::DisplayText("&[red]Something went wrong in the mapping. Returning to Menu.")
         Start-Sleep -Seconds 2
         Clear-Host
         break
@@ -104,6 +101,6 @@ function Invoke-RoboCopy {
     $targetFolder = Get-TargetDetails
     robocopy.exe "$targetFolder" ".\" /TEE /R:0 /W:0 /XJ /E /MT:$MT_Value /XD "$targetFolder\AppData" "$targetFolder\OneDrive - Hatch Ltd" "$targetFolder\OneDrive" "$targetFolder\Hatch Ltd" "$targetFolder\Hatch EIM" "$targetFolder\Email" "$targetFolder\OneDrive" "$targetFolder\Hatch Ltd"
     Robocopy.exe "$targetFolder\AppData\Local\Microsoft\Outlook" ".\Local" /TEE /R:0 /W:0 /XJ /E /MT:$MT_Value /XD "$targetFolder\AppData" "$targetFolder\OneDrive - Hatch Ltd" "$targetFolder\OneDrive" "$targetFolder\Hatch Ltd" "$targetFolder\Hatch EIM" "$targetFolder\Email" "$targetFolder\OneDrive" "$targetFolder\Hatch Ltd"
-    Write-Host "Backup completed. Returning to script menu." -ForegroundColor Green
+    [PowerIO]::DisplayText("&[green]Backup &[highlight]completed&[green]. Returning to script menu.")
     Start-Sleep -Seconds 3
 }
