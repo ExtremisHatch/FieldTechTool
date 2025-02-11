@@ -30,7 +30,7 @@
     RequiredAssemblies = @()
 
     # Script files (.ps1) that are run in the caller's environment prior to importing this module
-    ScriptsToProcess = @('.\PowerIOUtils\TextTools.ps1', '.\PowerIOUtils\BasePowerIO.ps1', '.\PowerIOUtils\InputTools.ps1')
+    ScriptsToProcess = @('.\PowerIOUtils\TextTools.ps1', '.\PowerIOUtils\OutputTools.ps1', '.\PowerIOUtils\BasePowerIO.ps1', '.\PowerIOUtils\InputTools.ps1')
 
     # Type files (.ps1xml) to be loaded when importing this module
     TypesToProcess = @()

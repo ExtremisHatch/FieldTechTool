@@ -114,7 +114,7 @@ function QueryUserSelection {
         [int]::TryParse($Host.UI.ReadLine(), [ref]$response) > $null # Pipe result output
 
         # If $response -eq 0, Parse failed (or user input 0, parse succeeds), display Invalid Selection
-        if ($response -eq 0) { HandleTextTypesOutput -Text $InvalidSelectionText }
+        if ($response -le 0 -or $response -gt $choice) { HandleTextTypesOutput -Text $InvalidSelectionText }
     } 
 
     Write-Host '' # Separate answer from future output (Readability)
@@ -131,7 +131,7 @@ function QueryUserKeySelection {
         $Question, 
         [KeySelection[]]$Selections, 
         $AnswerText="Selection: ",
-        $InvalidSelectionText="&[red;highlight]Invalid selection&[red]... Please try again",
+        $InvalidSelectionText="&[red;highlight]Invalid selection...&[red] Please try again",
         [Switch] $NoQuestionSymbol # Toggle for automatic Question Symbol & alignment
     )
     
