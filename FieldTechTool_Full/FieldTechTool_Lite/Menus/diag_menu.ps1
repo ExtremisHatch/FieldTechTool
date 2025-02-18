@@ -105,6 +105,18 @@ function Show-DiagMenu {
 
                         });
 
+    $Selections += [KeySelection]::new('7', "&[green]Ping Access Point (Test Local Connection)",
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]Local Connection Test')
+                            Start-Sleep -Seconds 1.5
+                            Clear-Host
+                            
+                            StartAccessPointQuerying
+
+                            PauseUser
+                            Clear-Host
+
+                        });
+
     $PreviousMenuSelection = [KeySelection]::new('q', "&[yellow]Previous menu",
                         {   Clear-Host });
     $Selections += $PreviousMenuSelection
