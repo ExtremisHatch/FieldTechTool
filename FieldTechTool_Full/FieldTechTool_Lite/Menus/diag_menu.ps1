@@ -5,6 +5,7 @@
 . .\Scripts\Diagnostics\Simulate_Usage.ps1
 . .\Scripts\Diagnostics\gather_logs.ps1
 . .\Scripts\Diagnostics\user_usage.ps1
+. .\Scripts\Diagnostics\network_queries.ps1
 
 function Show-DiagMenu {
     $Selections = @()
@@ -91,6 +92,30 @@ function Show-DiagMenu {
 
                             PauseUser
                             Clear-Host });
+
+    $Selections += [KeySelection]::new('6', "&[green]Query remote Desktop/Server Status & User List",
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]Remote Desktop Query')
+                            Start-Sleep -Seconds 1.5
+                            Clear-Host
+                            
+                            StartRemoteDesktopQuerying
+
+                            PauseUser
+                            Clear-Host
+
+                        });
+
+    $Selections += [KeySelection]::new('7', "&[green]Ping Access Point (Test Local Connection)",
+                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]Local Connection Test')
+                            Start-Sleep -Seconds 1.5
+                            Clear-Host
+                            
+                            StartAccessPointQuerying
+
+                            PauseUser
+                            Clear-Host
+
+                        });
 
     $PreviousMenuSelection = [KeySelection]::new('q', "&[yellow]Previous menu",
                         {   Clear-Host });

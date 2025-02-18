@@ -3,17 +3,43 @@
     PowerIO TextTools
 
 #>
+class TextTools {
+    
+    <#
+        Proper method to split strings into Lines
+            Standard String .Split("`n") doesn't account for Carriage Returns, etc
+    #>
+    static [String[]] GetLines([String] $Text) {
+        return [Regex]::Split($Text, "\r\n|[\r\n]")
+    }
 
-class ColoredText {
-    static [HashTable] $ContrastColors = @{
+    hidden static [Hashtable] $ContrastingColorDefinitions = @{
         BLACK='WHITE'; DarkBlue='WHITE'; DarkGreen='WHITE'; DarkCyan='WHITE'; DarkRed='WHITE'; DarkMagenta='WHITE'; DarkYellow='WHITE';
         Gray='WHITE'; DarkGray='WHITE'; Blue='WHITE'; Green='BLACK'; Cyan='BLACK'; Red='WHITE'; Magenta='WHITE'; Yellow='BLACK'; White='BLACK';
     }
 
+    static [String] GetContrastingColor([Object]$Color) {
+        if ($Color -is [System.ConsoleColor]) {
+            $Color = ([System.ConsoleColor]$Color).ToString()
+        }
+
+        if ($Color -is [String]) {
+            return [TextTools]::ContrastingColorDefinitions.Item($Color)
+        } else {
+            throw "Contrasting Color not found for '$Color'!"
+        }
+    }
+
+}
+
+
+class ColoredText {
+
     # I've actually impressed myself with the creation of this regex
     # I am able to pull colors from string utilizing 'groups' from the regex
     # Specified a-zA-Z as A-z will capture other chars, such as additional ']' on the end and error
-    hidden static $RegexFormat = "(&\[)([a-zA-Z]*)(;?)([a-zA-Z]*)(\])"
+    # Added \/\\ to allow '\' & '/' for '/highlight' ending
+    hidden static $RegexFormat = "(&\[)([\/\\a-zA-Z]*)(;?)([a-zA-Z]*)(\])"
     
     # Format:
     # Foreground color
@@ -86,6 +112,8 @@ class ColoredText {
     Display() {
         $this.Display($True)
     }
+    
+    hidden static [Hashtable] $ColoredTextInstructions = @{Reset=@('reset'); Highlight=@('hl','highlight'); EndHighlight=@('/hl','\hl','\highlight','/highlight')}
 
     [OutputText] ToOutputText() {
         if ($this.OutputText -ne $null) {
@@ -99,6 +127,9 @@ class ColoredText {
 
         $LastMatchEnd = -1;
         $ForegroundColor = $BackgroundColor = $null
+        
+        $LastHighlight = $null
+        
         for ($i=0; $i -lt $Matches.Count; $i++) {
             $Match = $Matches[$i]
             $MatchStart = $Match.Groups[0].Index
@@ -111,35 +142,61 @@ class ColoredText {
             $FGMatch = $Match.Groups[2]
             $BGMatch = $Match.Groups[4]
             
-            # If specified reset, or empty color assigning, reset colors
-            if ($FGMatch -ilike 'reset' -or $Match.Length -eq 3) {
-                $ForegroundColor = $BackgroundColor = $null;
-            } elseif (@($FGMatch, $BGMatch) -like 'highlight') {
-                # Use Foreground color as Background
-                # And find the best foreground color to highlight
-                
-                # If FG color is 'highlight', highlight it based on previous color
-                if ($FGMatch -like 'highlight') {
-                    $LastColors = $CreatedOutput.GetLastColor();
-                    $LastForeground = $LastColors.Foreground
+            $InstructionType = ([ColoredText]::ColoredTextInstructions.Keys | Where-Object { $Values = [ColoredText]::ColoredTextInstructions.Item($_); (($Values -like $FGMatch.Value) -ne $null -or ($Values -like $BGMatch.Value) -ne $null)})
+            $InstructionPosition = if ($InstructionType -eq $null) { -1 } else { if ([ColoredText]::ColoredTextInstructions.Item($InstructionType) -like $FGMatch.Value) { 0 } else { 1 } }
 
-                    # ToString() the Color, as it may be Enum Color
-                    # But first, convert color to ConsoleColor to be certain the full name is available
-                    $Contrast = [ColoredText]::ContrastColors[([System.ConsoleColor]$LastForeground).ToString()]
+            if ($InstructionType -eq $null -and $Match.Length -eq 3) { $InstructionType = 'Reset' }
 
-                    $ForegroundColor = $Contrast
-                    $BackgroundColor = $LastForeground
-
-                # Else if it's the BG Color that's 'highlight', check FG color exists
-                } elseif ($FGMatch.Length -ge 1) {
-                    # Same as above, convert to ConsoleColor so we have the full color name and not partial
-                    $Contrast = [ColoredText]::ContrastColors[([System.ConsoleColor]$FGMatch.Value).ToString()]
-                    $ForegroundColor = $Contrast
-                    $BackgroundColor = $FGMatch
-                }
-            } else {
+            # If InstructionType is null, we do the colors woop woop
+            if ($InstructionType -eq $null) {
                 $ForegroundColor = $FGMatch
                 $BackgroundColor = $BGMatch
+            } else {
+                switch ($InstructionType) {
+                    'Reset' { # If specified reset, or empty color assigning, reset colors
+                        $ForegroundColor = $BackgroundColor = $null;
+                    }
+                    'Highlight' {
+                        # Use Foreground color as Background
+                        # And find the best foreground color to highlight
+                        if ($InstructionPosition -eq 0) {
+                            $LastColors = $CreatedOutput.GetLastColor();
+                            
+                            # Save last highlight base colors
+                            $LastHighlight = $LastColors
+
+                            $LastForeground = $LastColors.Foreground
+
+                            # ToString() the Color, as it may be Enum Color
+                            # But first, convert color to ConsoleColor to be certain the full name is available
+                            $Contrast = [TextTools]::GetContrastingColor(([System.ConsoleColor]$LastForeground).ToString())
+
+                            $ForegroundColor = $Contrast
+                            $BackgroundColor = $LastForeground
+
+                        # Else if it's the BG Color that's 'highlight', check FG color exists
+                        } elseif ($FGMatch.Length -ge 1) {
+                            # Same as above, convert to ConsoleColor so we have the full color name and not partial
+                            $Contrast = [TextTools]::GetContrastingColor(([System.ConsoleColor]$FGMatch.Value).ToString())
+
+                            # Same as above, store the colors before a highlight
+                            $LastHighlight = $CreatedOutput.GetLastColor()
+
+                            $ForegroundColor = $Contrast
+                            $BackgroundColor = $FGMatch
+                        }
+                    }
+                    'EndHighlight' {
+                        $LastColors = $CreatedOutput.GetLastColor()
+
+                        # If highlighting, Background is OG Foreground
+                        # By reversing background we can determine Foreground
+                        # Just do a good ole guess, if you misuse this then it'll break and that's just user error lol
+                        $Base = if ($LastHighlight.Foreground -eq $LastColors.Background) { $LastHighlight } else { @{Foreground=$LastColors.Background;Background=$LastColors.Foreground} }
+                        $ForegroundColor = $Base.Foreground
+                        $BackgroundColor = $Base.Background
+                    }
+                }
             }
             $LastMatchEnd = $MatchEnd
         }
@@ -180,6 +237,39 @@ class ColoredText {
 
         # Technically do not need this, however Powershell ISE is silly
         return $false
+   }
+
+   # Throughout all our methods, we have presumptions/cautions causing us
+   # to place color resetters GALORE
+   # In order to optimize processing time, and also just cleanliness,
+   # we should CompressColorDefinitions whenever possible!
+   static [String] CompressColorDefinitions([String] $ToCompress) {
+        $Matches = (Select-String -Pattern ([ColoredText]::RegexFormat) -InputObject $ToCompress -AllMatches).Matches
+
+        # Work backwards, as editing string will change index
+        # Earlier index unaffected by (comparatively) higher index changes !!
+        $LastMatchEnd = -1;
+        for ($i=($Matches.Count-1); $i -gt 0; $i--) {
+            
+            $Match = $Matches[$i-1]
+            $NextMatch = $Matches[$i]
+
+            # Compare Foreground & Background values
+            $MatchesEqual = ($Match.Groups[2].Value -eq $NextMatch.Groups[2].Value) -and ($Match.Groups[4].Value -eq $NextMatch.Groups[4].Value)
+
+            if ($MatchesEqual) {
+                $ToCompress = $ToCompress.Substring(0, $NextMatch.Index) + $ToCompress.Substring($NextMatch.Index + $NextMatch.Length)
+            }
+
+            ## If Match is redundant (Color defined right after a reset color)
+            #$RedunantColor = ($Match.Length -eq 3 -or $Match.Value -ilike "*reset*") -and ($NextMatch.Length -gt 3 -and $NextMatch.Value -notlike "*reset*")
+            #if ($RedunantColor) {
+            #    Write-Host "Removing redundant '$($Match.Value)' behind '$($NextMatch.Value)' in '$ToCompress'"
+            #    $ToCompress = $ToCompress.Substring(0, $Match.Index) + $ToCompress.Substring($Match.Index + $Match.Length)
+            #}
+        }
+
+        return $ToCompress
    }
 }
 
@@ -392,6 +482,31 @@ class OutputText {
             $LastPiece = $this.GetLastPiece()
             return @{Foreground=$LastPiece.GetForegroundColor(); Background=$LastPiece.GetBackgroundColor()}
         }
+    }
+
+    [Hashtable] GetLastColor([int] $Index) {
+        $AllPieces = $this.GetPieces()
+        $Foreground = $Background = $null
+        $TotalIndex = 0;
+        for ($i = 0; $i -lt $AllPieces.Count; $i++) {
+            $Piece = $AllPieces[$i]
+            $PieceLength = $Piece.GetText().Length
+            
+            if ($this.IsColorInheriting()) {
+                if ($Piece.HasForegroundColor()) { $Foreground = $Piece.GetForegroundColor() }
+                if ($Piece.HasBackgroundColor()) { $Background = $Piece.GetBackgroundColor() }
+            } else {
+                $Foreground = if ($Piece.HasForegroundColor()) { $Piece.GetForegroundColor() } else { $null }
+                $Background = if ($Piece.HasBackgroundColor()) { $Piece.GetBackgroundColor() } else { $null }
+            }
+
+            if ($Index -ge $TotalIndex -and $Index -le ($TotalIndex+$PieceLength)) {
+                break;
+            }
+            $TotalIndex += $PieceLength
+        }
+
+        return @{Foreground=$Foreground;Background=$Background}
     }
 }
 
