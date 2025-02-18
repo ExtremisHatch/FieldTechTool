@@ -111,7 +111,7 @@ function StartRemoteDesktopQuerying {
 function StartAccessPointQuerying {
     # Filter down to Internet adapters, and only active ones
     $NetworkConfigurations = Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway -ne $null -and $_.NetAdapter.Status -ne 'Disconnected' }
-    $ConfigDescriptors = $cfg | % { "&[yellow]$($_.InterfaceAlias) &[gray]($($_.InterfaceDescription))" }
+    $ConfigDescriptors = $NetworkConfigurations | % { "&[yellow]$($_.InterfaceAlias) &[gray]($($_.InterfaceDescription))" }
 
     if ($NetworkConfigurations.Count -gt 1) {
         $SelectedConfiguration = $NetworkConfigurations[(QueryUserSelection -Question "Which Network Adapter are you using?" -Answers $ConfigDescriptors)]
