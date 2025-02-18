@@ -76,7 +76,7 @@ function StartRemoteDesktopQuerying {
         [PowerIO]::DisplayText("`t`t&[gray]$ResultsText")
         [PowerIO]::DisplayText("${ResultOffset}&[gray]Success Rate: $([PingUtilities]::ColorSuccessRate($PingStats))&[gray] [$($PingStats.SuccessCount)/$($PingStats.TotalCount)]")
         [PowerIO]::DisplayText("${ResultOffset}&[gray]Response Time: $([PingUtilities]::ColorPing($PingStats.Average))&[gray] [Min: $([PingUtilities]::ColorPing($PingStats.Minimum))&[gray], Max: $([PingUtilities]::ColorPing($PingStats.Maximum))&[gray]]")
-        [PowerIO]::DisplayText("${ResultOffset}&[gray]Variance: $([PingUtilities]::ColorVariance($PingStats)))&[gray] [+- $($PingStats.Variance.ToString('0.#'))ms]")
+        [PowerIO]::DisplayText("${ResultOffset}&[gray]Variance: $([PingUtilities]::ColorVariance($PingStats))&[gray] [+- $($PingStats.Variance.ToString('0.#'))ms]")
     }
 
     #
