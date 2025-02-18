@@ -4,12 +4,12 @@
 # Ignore text files
 *.txt
 
-# Ignore PDF files
-*.pdf
+# Need to start keeping changlog files in case I mess up. 
+# *.doc
+# *.docx
+# *.pdf
 
 # Ignore Microsoft Office files
-*.doc
-*.docx
 *.xls
 *.xlsx
 *.ppt
