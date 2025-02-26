@@ -123,7 +123,7 @@ function Enable_USB {
 
     [PowerIO]::DisplayText("&[white;darkgray]Intune USB Management:")
     [PowerIO]::DisplayText("`t&[gray]Storage Allowed: &[$(if ($IntunePermissions.StorageAllowed){'green'}else{'red'})]$($IntunePermissions.StorageAllowed)")
-    [PowerIO]::DisplayText("`t&[gray]Storage Disabled: &[$(if ($IntunePermissions.StorageEnabled){'green'}else{'red'})]$($IntunePermissions.StorageEnabled)")
+    [PowerIO]::DisplayText("`t&[gray]Storage Enabled: &[$(if ($IntunePermissions.StorageEnabled){'green'}else{'red'})]$($IntunePermissions.StorageEnabled)")
 
     [PowerIO]::DisplayText("&[white;darkgray]User USB Permissions:")
     $CurrentPermissions.Keys | % { $HasPerm = $CurrentPermissions.Item($_); [PowerIO]::DisplayText("`t&[gray]$($_): &[$(if ($HasPerm) {'green'} else {'red'})]$HasPerm") }
