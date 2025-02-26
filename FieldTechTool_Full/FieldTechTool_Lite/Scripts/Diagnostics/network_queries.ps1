@@ -43,7 +43,7 @@
 function StartRemoteDesktopQuerying {
     # Ask user what desktop/server
     $DesktopName = QueryUser -Question "&[Yellow]What Desktop/Server would you like to query?&[]`n>" -AnswerRequired
-
+  
     # Results of Query
     $Result = QueryNetworkMachine -Server $DesktopName -PingCount 10
 
@@ -126,7 +126,7 @@ function StartAccessPointQuerying {
     # But by pinging the gateway, we can only reach it from the desired (or connected) adapter anyway!
     $DefaultGateway = $SelectedConfiguration.IPv4DefaultGateway[0].NextHop
 
-    [PowerIO]::DisplayText("`n&[gray]Testing '$($SelectedConfiguration.InterfaceAlias)', Pinging IPv4 Gateway '$DefaultGateway'")
+    [PowerIO]::DisplayText("`n&[yellow]Testing '&[hl]$($SelectedConfiguration.InterfaceAlias)&[/hl]', Pinging IPv4 Gateway '&[hl]$DefaultGateway&[/hl]'")
     
     $PingResults = PingServer -Server $DefaultGateway -Count 25
     $PingStatus = if ($PingResults.Success) { "&[green]Successful" } else { "&[red]Failed" }
@@ -149,20 +149,25 @@ function StartAccessPointQuerying {
 }
 
 function PingServer {
-    param($Server, $Timeout=2000, $Count=10, [switch]$AsJob, [ScriptBlock]$PingEventHandler)
+    param($Server, $Timeout=2000, $Count=10, [switch]$AsJob, [ScriptBlock]$PingEventHandler, [int]$InterPingDelay=50)
 
     $PingScript = {
         param($Server, $Timeout, $Count)
         $Pings = @() # List of pings
         for ($i = 0; $i -lt $Count; $i++) {
+            $StartTime = [DateTime]::Now
             $Ping = (Get-WmiObject -Class Win32_PingStatus -Filter ('Address="{0}" and Timeout={1}' -f $Server, $Timeout) | Select-Object ResponseTime, StatusCode)
             $PingResult = @{Success=($Ping.StatusCode -eq 0);
                             StatusCode=($Ping.StatusCode);
                             ResponseTime=($Ping.ResponseTime);}
             $Pings += $PingResult
 
-            if ($PingEventHandler -ne $null) {
-                $PingEventHandler.Invoke($PingResult)
+            # Ping Event Handler, no idea for use case yet just nifty to have
+            if ($PingEventHandler -ne $null) { $PingEventHandler.Invoke($PingResult) }
+            
+            # Ping spacing
+            if (($PassedTime = ($EndTime = [DateTime]::Now).Subtract($StartTime).TotalMilliseconds) -lt $InterPingDelay) {
+                Start-Sleep -Milliseconds ($InterPingDelay - $PassedTime) # This way we can force pings to be at LEAST 50ms apart for example
             }
         }
         return $Pings
