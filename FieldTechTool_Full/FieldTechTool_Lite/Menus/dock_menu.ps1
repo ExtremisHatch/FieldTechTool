@@ -38,7 +38,7 @@ function Show-DockMenu {
 
     $Selection = $null
     while ($Selection -eq $null -or $Selection.Key -ne $PreviousMenuSelection.Key) {
-        $Selection = QueryUserKeySelection -Question "&[yellow;darkgray] Please choose an option &[]`n" -Selections $Selections
+        $Selection = QueryUserKeySelection -Question ([BoxStyle]::Create([BoxStyle]::THIN, 'yellow').StyleText("&[yellow;darkgray] Please choose an option ")) -Selections $Selections
         $Selection.Run()
     }
 }

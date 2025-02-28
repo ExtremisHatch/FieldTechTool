@@ -74,7 +74,7 @@ function Show-MainMenu {
    $Selection = $null;
    # While Selection doesn't exist (First iteration), or Selection isn't "Exit" (Q), keep looping
    while ($Selection -eq $null -or $Selection.Key -ne $ExitSelection.Key) {
-        $Selection = QueryUserKeySelection -Question "&[yellow;darkgray] What would you like to do? &[]`n" -Selections $Selections
+        $Selection = QueryUserKeySelection -Question ([BoxStyle]::Create([BoxStyle]::THIN, 'yellow').StyleText("&[yellow;darkgray] What would you like to do? ")) -Selections $Selections
         $Selection.Run()
    }
 }
