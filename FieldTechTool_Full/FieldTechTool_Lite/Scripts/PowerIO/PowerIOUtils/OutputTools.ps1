@@ -6,7 +6,7 @@
     }
 
     [StyledText] StyleText([String] $Text) {
-        return [StyledText]::Create($Text).StyleText($this)
+        return [StyledText]::Create($Text).Style($this)
     }
 }
 
