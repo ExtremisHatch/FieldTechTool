@@ -17,16 +17,18 @@ Import-Module -Force "$PSScriptRoot\Scripts\PowerIO\PowerIO.psd1"
 . .\Menus\main_menu.ps1
 
 # Title Text for tool (Shown once, only on start)
-$FTTTitle = "&[red;highlight]FIELD`n     &[red;highlight]TECH`n         &[red;highlight]TOOL"
+$StyledTitle = [StyledText]::Create("&[red;highlight]FIELD`n     &[red;highlight]TECH`n         &[red;highlight]TOOL")
+
+# Styles to apply to the title text
+$Styles = @([BoxStyle]::Create([BoxStyle]::DOTTED, 'yellow;red', 0, ';red'), 
+            [BoxStyle]::Create([BoxStyle]::DOTTED, 'red;yellow', 0),
+            [CornerStyle]::Create([CornerStyle]::THIN, 'yellow'))
+
+# Apply all those good ole styles, how stylish
+$Styles | % { $StyledTitle.Style($_) > $null <# Pump output to null #> } 
+
 # Display the Title Text, with an additional Newline for cleaner separation
-$BoxStyles = @([BoxStyle]::Create([BoxStyle]::DOTTED, 'yellow;red', 0, ';red'), [BoxStyle]::Create([BoxStyle]::DOTTED, 'red;yellow', 0))
-$CornerStyles = @([CornerStyle]::Create([CornerStyle]::THIN, 'red'), [CornerStyle]::Create([CornerStyle]::THIN, 'yellow'))
-$StyledText = [StyledText]::Create($FTTTitle)
-
-$BoxStyles | % { $StyledText.Box($_) > $null }
-$CornerStyles | % { $StyledText.StyleCorners($_) > $null }
-
-[PowerIO]::DisplayText($StyledText.GetText()+"`n")
+$StyledTitle.Append("`n").Display()
 
 # Main menu
 Show-MainMenu
