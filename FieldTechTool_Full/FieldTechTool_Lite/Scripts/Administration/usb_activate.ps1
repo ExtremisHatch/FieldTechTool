@@ -9,6 +9,30 @@
 # Borrowing a C# form
 Add-Type -AssemblyName System.Windows.Forms
 
+class RegistryLocation {
+    
+    #
+    # Default Windows Storage Management
+    #
+    static [Microsoft.Win32.RegistryKey] GetRemoveableStorageDevices() {
+        # Get Account, and UserSID, to create Regedit Path for RemoveableStorageDevices
+        $Account = [System.Security.Principal.NTAccount] (Get-WMIObject -class Win32_ComputerSystem).Username
+        $UserSID = $Account.Translate([System.Security.Principal.SecurityIdentifier]).Value 
+        return (Get-ChildItem -Path ("registry::HKEY_USERS\$UserSID\Software\Policies\Microsoft\Windows\RemovableStorageDevices\"))
+    }
+   
+    #
+    # Intune Managed Values
+    #
+    static [Microsoft.Win32.RegistryKey] GetPolicyManagerSystem() {
+        return (Get-Item -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\System\")
+    }
+
+    static [Microsoft.Win32.RegistryKey] GetStorageSenseParameters() {
+        return (Get-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\")
+    }
+}
+
 # Explorer auto-restarts if killed, utilize that for restart functionality
 function Restart-Explorer {
     # Restarting explorer by Taylor, Koupa
@@ -23,14 +47,8 @@ Write                          False
 Read                           False                                                                                                                                             
 Execute                        False
 #>
-function GetUSBPermissions {
-    param([Microsoft.Win32.RegistryKey]$USBRegistry)
-
-    # Setup 'Parent' form to allow for 'TopMost' Property (AlwaysOnTop)
-    $AlwaysOnTopForm = New-Object -TypeName System.Windows.Forms.Form -Property @{TopMost=$true}
-    
-    # Check if User already has full USB permissions
-    $HasUSBPermissions = ($RegPath.Property | Where-Object { $RegPath.GetValue($_) -eq 0 }).Count -eq 3
+function GetUserUSBPermissions {
+    $RegPath = [RegistryLocation]::GetRemoveableStorageDevices()
 
     $USBPermissions = @{}
 
@@ -40,8 +58,9 @@ function GetUSBPermissions {
     return $USBPermissions
 }
 
-function SetUSBPermissions {
-    param([Microsoft.Win32.RegistryKey]$USBRegistry, [hashtable]$Permissions)
+function SetUserUSBPermissions {
+    param([hashtable]$Permissions)
+    $USBRegistry = [RegistryLocation]::GetRemoveableStorageDevices()
 
     $Policy = "registry::"+ $USBRegistry.Name 
     
@@ -49,6 +68,27 @@ function SetUSBPermissions {
     # Then set ItemProperty with opposite of value (Turn True into False, and vice versa, as the Value is for DENY not ALLOW)
     $Permissions.Keys | Where-Object { $ExistingValue = $USBRegistry.GetValue("Deny_$($_)"); return $ExistingValue -ne $null } | 
         % { Set-ItemProperty -Path $Policy -Name "Deny_$($_)" -Value ([int](-not $Permissions.Item($_))) }
+}
+
+function GetIntuneUSBPermissions {
+    $SystemRegistry = [RegistryLocation]::GetPolicyManagerSystem()
+    $StorageRegistry = [RegistryLocation]::GetStorageSenseParameters()
+
+    $StorageCardAllowed = [boolean] ([int] $SystemRegistry.GetValue("AllowStorageCard"))
+
+    # Turn 'Disabled' into 'Enabled' by flipping value
+    $StorageCardEnabled = -not ([boolean] ([int] $StorageRegistry.GetValue("StorageCardDisabled")))
+
+    return @{StorageAllowed=$StorageCardAllowed; StorageEnabled=$StorageCardEnabled}
+}
+
+function SetIntuneUSBPermissions {
+    param([boolean] $Value)
+    $SystemRegistry = [RegistryLocation]::GetPolicyManagerSystem()
+    $StorageRegistry = [RegistryLocation]::GetStorageSenseParameters()
+
+    Set-ItemProperty -Path "registry::$($SystemRegistry.Name)" -Name "AllowStorageCard" -Value ([int]$Value)
+    Set-ItemProperty -Path "registry::$($StorageRegistry.Name)" -Name "StorageCardDisabled" -Value ([int](-not $Value))   
 }
 
 function TestCanModifyRegistry {
@@ -70,30 +110,49 @@ function TestCanModifyRegistry {
 
 function Enable_USB {
     
-    # Get Account, and UserSID, to create Regedit Path for RemoveableStorageDevices
-    $Account = [System.Security.Principal.NTAccount] (Get-WMIObject -class Win32_ComputerSystem).Username
-    $UserSID = $Account.Translate([System.Security.Principal.SecurityIdentifier]).Value 
-    $RegPath = Get-ChildItem -Path ("registry::HKEY_USERS\$UserSID\Software\Policies\Microsoft\Windows\RemovableStorageDevices\")
-
     # Get Current USB Permissions/Capabilities
-    $CurrentPermissions = GetUSBPermissions -USBRegistry $RegPath
+    $CurrentPermissions = GetUserUSBPermissions
+    $UserUSBAllowed = -not $CurrentPermissions.ContainsValue($false)
 
-    [PowerIO]::DisplayText("&[white;darkgray]Current USB Permissions:")
+    # Intune Permissions
+    $IntunePermissions = GetIntuneUSBPermissions
+    $IntuneUSBAllowed = $IntunePermissions.StorageAllowed -and $IntunePermissions.StorageEnabled
+
+    # Display USB Status
+    [PowerIO]::DisplayText("&[white;darkgray] USB Configuration &[]`n")
+
+    [PowerIO]::DisplayText("&[white;darkgray]Intune USB Management:")
+    [PowerIO]::DisplayText("`t&[gray]Storage Allowed: &[$(if ($IntunePermissions.StorageAllowed){'green'}else{'red'})]$($IntunePermissions.StorageAllowed)")
+    [PowerIO]::DisplayText("`t&[gray]Storage Enabled: &[$(if ($IntunePermissions.StorageEnabled){'green'}else{'red'})]$($IntunePermissions.StorageEnabled)")
+
+    [PowerIO]::DisplayText("&[white;darkgray]User USB Permissions:")
     $CurrentPermissions.Keys | % { $HasPerm = $CurrentPermissions.Item($_); [PowerIO]::DisplayText("`t&[gray]$($_): &[$(if ($HasPerm) {'green'} else {'red'})]$HasPerm") }
+
 
     # Create Parent form for TopMost setting by Taylor, Koupa
     $DisplayTopMost = New-Object System.Windows.Forms.Form -Property @{TopMost=$true}
 
+    
     # User already has full USB Permissions
-    if (-not $CurrentPermissions.ContainsValue($false)) {
+    if ($UserUSBAllowed -and $IntuneUSBAllowed) {
         [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'USB (Storage) is already enabled!', 'Error!') > $null
         return
+    } 
+
+    if (-not $IntuneUSBAllowed) {
+        $CanModifyIntune = TestCanModifyRegistry -Registry ([RegistryLocation]::GetPolicyManagerSystem())
+        if (-not $CanModifyIntune) {
+            [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'You do not have permissions to change Microsoft Intune USB regedit values! Try again with Administrator privileges.', 'Error!') > $null
+            return
+        }
     }
 
-    # Test if user has permissions to change Regedit values
-    if (-not (TestCanModifyRegistry -Registry $RegPath)) {
-        [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'You do not have permissions to change USB (Storage) regedit values! Try again with Administrator privileges.', 'Error!') > $null
-        return
+    if (-not $UserUSBAllowed) {
+        $CanModifyUserUSB = TestCanModifyRegistry -Registry ([RegistryLocation]::GetRemoveableStorageDevices())
+        if (-not $CanModifyUserUSB) {
+            [System.Windows.Forms.MessageBox]::Show($DisplayTopMost,'You do not have permissions to change USB (Storage) regedit values! Try again with Administrator privileges.', 'Error!') > $null
+            return
+        }
     }
 
     # Create a message box
@@ -112,8 +171,11 @@ function Enable_USB {
     $CurrentPermissions.Keys | Where-Object { $CurrentPermissions.Item($_) -ne $true } | % { $PermissionsToChange[$_] = $true }
 
     # Set Permissions
-    SetUSBPermissions -USBRegistry $RegPath -Permissions $PermissionsToChange
+    SetUserUSBPermissions -USBRegistry $RegPath -Permissions $PermissionsToChange
     
+    # Set InTune Permissions
+    SetIntuneUSBPermissions -Value $true
+
     # Restart explorer for changes to take effect
     Restart-Explorer
     
