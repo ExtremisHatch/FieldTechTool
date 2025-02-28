@@ -357,6 +357,10 @@ class OutputText {
         return $this
     }
     
+    [String] ToString() {
+        return ($this.Pieces | % { $_.ToString() }) -join ''
+    }
+
     [void] Display([boolean]$NewLine) {
         $LastPiece = $null
         foreach ($Piece in $this.Pieces) {
@@ -558,6 +562,10 @@ class OutputPiece {
     }
 
     [String] GetText() {
+        return $this.ToString()
+    }
+
+    [String] ToString() {
         return $this.Text
     }
 
@@ -837,5 +845,42 @@ function VisualTestTextTools() {
     Write-Host "Took: $($totalTime.TotalSeconds) second(s)"
 }
 
+class TreeElement {
+
+    hidden static [int] $ChildOffset = 4;
+    
+    [String] $Text;
+    [TreeElement[]] $Children;
+
+    TreeElement($Text) {
+        $this.Text = $Text
+        $this.Children = @()
+    }
+
+    [TreeElement] AddChild($Text) {
+        $Child = [TreeElement]::new($Text)
+        $this.Children += $Child
+        return $Child
+    }
+
+    Display() {
+        $this.Display(0, '')
+    }
+
+    hidden Display($Indent, $Prefix) {
+        if ($Indent -ge [TreeElement]::ChildOffset) {
+            Write-Host "$(' '*($Indent-[TreeElement]::ChildOffset))" -NoNewline
+        } else {
+            Write-Host "$(' '*$Indent)" -NoNewline
+        }
+        Write-Host "$Prefix$($this.Text)"
+
+        for ($i=0; $i -lt $this.Children.Count; $i++) {
+            $Prefix = if ($i -eq ($this.Children.Count - 1)) { '└' } else { '├' }
+            $this.Children[$i].Display($Indent+4, "${Prefix}──")
+        }
+    }
+
+}
 
 ###

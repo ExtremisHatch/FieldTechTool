@@ -4,12 +4,17 @@
     hidden TextFormatStyle([Object[]] $Elements) {
         $this.Elements = $Elements
     }
+
+    [StyledText] StyleText([String] $Text) {
+        return [StyledText]::Create($Text).StyleText($this)
+    }
 }
 
 class BoxStyle : TextFormatStyle {
-    static $SQUARES = [BoxStyle]::new(@([char]9608,[char]9608,[char]9608))
-    static $DOTTED = [BoxStyle]::new(@([char]9617,[char]9617,[char]9617))
-    static $PLAIN = [BoxStyle]::new(@('-','|','+'))
+    static $SQUARES = [BoxStyle]::new(@([char]9608, [char]9608, [char]9608))
+    static $DOTTED = [BoxStyle]::new(@([char]9617, [char]9617, [char]9617))
+    static $PLAIN = [BoxStyle]::new(@('+', '-', '|'))
+    static $THIN = [BoxStyle]::new(@([char]9484, [char]9488, [char]9492, [char]9496, [char]9472, [char]9474))
 
     $Color;
     $InsideColor;
@@ -23,6 +28,37 @@ class BoxStyle : TextFormatStyle {
         $this.SetPadding(0);
     }
 
+    hidden [String] GetElement($Index) {
+        # If it's a corner
+        if ($this.Elements.Count -eq 3) {
+            if ($Index -ge 0 -and $Index -le 3) {
+                return $this.Elements[0]
+            } else {
+                # Turn 5/6 into 1/2 for Hori & Vert
+                return $this.Elements[$Index-4]
+            }
+        } elseif ($this.Elements.Count -eq 6) {
+            return $this.Elements[$Index]
+        } else {
+            throw "Invalid Element Count '$($this.Elements.Count)', expecting 3 or 6"
+        }
+    }
+
+    hidden [String] GetHorizontalPiece() {
+        return $this.GetElement(4)
+    }
+
+    hidden [String] GetVerticalPiece() {
+        return $this.GetElement(5)
+    }
+
+    hidden [String] GetCornerPiece($Corner) { 
+        if ($Corner -gt 3 -or $Corner -lt 0) {
+            throw "Invalid Corner '$Corner', expected 0-3"
+        }
+        return $this.GetElement($Corner)
+    }
+    
     hidden [void] SetColor($Color) { if ($Color -eq $null) { $this.Color = ''; } else { $this.Color = $Color; } }
 
     hidden [void] SetInsideCharacter($Character) { if ($Character -eq $null) { $this.InsideCharacter = ' '; } else { $this.InsideCharacter = $Character } }
@@ -56,6 +92,7 @@ class BoxStyle : TextFormatStyle {
 class CornerStyle : TextFormatStyle {
     static $THIN = [CornerStyle]::new(@([char]8988, [char]8989, [char]8990, [char]8991))
     static $TRIANGLE = [CornerStyle]::new(@([char]9700, [char]9701, [char]9699, [char]9698))
+    static $ROUND = [CornerStyle]::new(@([char]9581, [char]9582, [char]9584, [char]9583))
 
     $Color;
     hidden CornerStyle([Object[]] $Elements) : base($Elements) {
@@ -84,12 +121,58 @@ class StyledText {
         return [StyledText]::new($Text)
     }
 
+    Display([Boolean] $Newline) {
+        HandleTextTypesOutput -Text $this.Text -NoNewline:(-not $Newline)
+    }
+
     Display() {
-        HandleTextTypesOutput -Text $this.Text
+        $this.Display($true)
+    }
+
+    [String] ToString() {
+        return $this.Text
     }
 
     [String] GetText() {
-        return $this.Text
+        return $this.ToString()
+    }
+
+    [StyledText] Append([String] $Text) {
+        $this.Text += $Text
+        return $this
+    }
+
+    [StyledText] Prepend([String] $Text) {
+        $this.Text = $Text + $this.Text
+        return $this
+    }
+
+    [StyledText] Insert([int] $Index, [String] $Text) {
+        $this.Text = $this.Text.Insert($Index, $Text)
+        return $this
+    }
+
+    [StyledText] Newline() {
+        $this.Append("`n")
+        return $this
+    }
+
+    <#
+        Generic Style Text
+    #>
+    [StyledText] Style([TextFormatStyle] $Style) {
+        switch ($Style) {
+            {$_ -is [CornerStyle]} {
+                return $this.StyleCorners($_)
+            }
+            {$_ -is [BoxStyle]} {
+                return $this.Box($_)
+            }
+            default {
+                throw "Unhandled/Invalid TextFormatStyle: '$($Style.GetType().FullName)'"
+            }
+        }
+        return $this # Unneeded, but PS be thinking nOt AlL cOdE pAtHs ReTuRn VaLuE
     }
 
     <#
@@ -136,22 +219,19 @@ class StyledText {
     #>
     
     static [String] WrapTextCorners([String] $Text, [CornerStyle] $Style) {
-        #if ($Corners.Count -lt 4) {
-        #    throw "Corners Array requires 4 elements (received '$($Corners.Count))"
-        #}
+        # Hardcoded values for tesitng
+        $AdditionalHorizontalPadding = 1 # Additional gap, as one across and one up aren't equal. Do 2 across 1 up
 
         $Corners = $Style.Elements
         $CornerColor = $Style.Color
 
         $TextLength = ([TextTools]::GetLines([ColoredText]::GetUncoloredText($Text)) | Sort-Object { $_.Length } -Descending | Select-Object -First 1).Length
-        $CornerLength = ($Corners | Sort-Object {$_.Length} -Descending)[0].Length
+        
+        $CornerLengths = $Corners | % { $_.Length }
 
-        # Add 1 space of padding to both sides of text
-        $ExtraPadding = [Math]::Max(0, $CornerLength-1)
-        $TheText = ([TextTools]::GetLines($Text) | % { " $_&[] " }) -join "`n"
-                
-        #0-3 = Corners, TL, TR, BL, BR & CornerColor = 4
-        $Spacing = ' ' * $TextLength
+        $TheText = ([TextTools]::GetLines($Text) | % { return "$(" " * $AdditionalHorizontalPadding) $_&[] " }) -join "`n"
+
+        $Spacing = ' ' * ($TextLength + ($AdditionalHorizontalPadding*2))
 
         $Pieces = @("&[{4}]{0}&[]$Spacing&[{4}]{1}&[]", "&[{4}]{2}&[]$Spacing&[{4}]{3}&[]") | % { $_ -f ($Corners+$CornerColor) }
 
@@ -159,72 +239,55 @@ class StyledText {
     }
 
     static [String] BoxText([String] $Text, [BoxStyle] $Style) {
+        $MaxWidth = ([TextTools]::GetLines([ColoredText]::GetUncoloredText($Text)) | Sort-Object { $_.Length } -Descending | Select-Object -First 1).Length
         $PADDING = $Style.Padding;
         $BGCOLOR = $Style.InsideColor; # NONE; DEFAULT
         $BGCHAR = $Style.InsideCharacter # SPACE; DEFAULT
         $BoxColor = $Style.Color
+        $FormattedBoxColor = "&[$BoxColor]"
 
-        # TODO NO LONGER, I am a jeanius !! (rofl)
-        # TODO: Some sort of builder for these text styles instead?
-
-        $Uncolored = [ColoredText]::GetUncoloredText($Text)
-        $Width = ([TextTools]::GetLines($Uncolored) | Sort-Object { $_.Length } -Descending | Select-Object -First 1).Length
-        #Write-Host "Width is: $Width"
-        #Write-Host "Text: '$Uncolored'"
-        #Write-Host "$($Uncolored.length)"
-        $DoBoxColoring = -not ($BoxColor -like '')
-       
-        $BoxColorFormat = "&[$BoxColor]"
-
-        # No need to wrap it on behalf of user 
-        #$Text = [TextStyler]::WrapText($Text, $Width, $False)
-
-        $HorizontalPiece = [char]$Style.Elements[0]
-        $VerticalPiece = [char]$Style.Elements[1]
-        $CornerPiece = [char]$Style.Elements[2]
-
-
-        $horizontalBar = $BoxColorFormat + $CornerPiece + ("$HorizontalPiece" * ($Width + ($PADDING*4))) + $CornerPiece + "&[]"
-        $verticalBar = $BoxColorFormat + $VerticalPiece + "&[$BGCOLOR]" + ($BGCHAR * ($Width + ($PADDING*4))) + $BoxColorFormat + $VerticalPiece + "&[]"
-
+        $HorizontalPiece = [char]$Style.GetHorizontalPiece()
+        $VerticalPiece = [char]$Style.GetVerticalPiece()
+        $CornerPieces = 0..3 | % { $Style.GetCornerPiece($_) }
+        $HorizontalBarFormat = $FormattedBoxColor + "{0}" + ("$HorizontalPiece" * ($MaxWidth + ($PADDING*4))) + "{1}&[]"
         
-        #$Result = @($horizontalBar, $verticalBar, $null, $verticalBar, $horizontalBar)
-        $Result = @($horizontalBar)
-        for ($i = 0; $i -lt $PADDING; $i++) {
-            $Result += $verticalBar
+        $topHorizontalBar = $HorizontalBarFormat -f $CornerPieces[0],$CornerPieces[1]
+        $bottomHorizontalBar = $HorizontalBarFormat -f $CornerPieces[2],$CornerPieces[3]
+        $verticalBar = $FormattedBoxColor + $VerticalPiece + "&[$BGCOLOR]" + ($BGCHAR * ($MaxWidth + ($PADDING*4))) + $FormattedBoxColor + $VerticalPiece + "&[]"
+
+        $Result = [System.Collections.ArrayList]::new() 
+        $Result.AddRange(($topHorizontalBar, $bottomHorizontalBar))
+        for ($i = 0; $i -lt ($PADDING*2); $i++) {
+            $Result.Insert(1, $verticalBar)
         }
 
+        # Now we compile the lines of text provided
         $TextResult = @()
-        foreach ($bit in [TextTools]::GetLines($Text)) {
-            $HasColor = [ColoredText]::IsColored($bit)
-            $PieceLength = [ColoredText]::GetUncoloredText($bit).Length; 
-            $RemainingLength = $Width - $PieceLength;
+        foreach ($Line in [TextTools]::GetLines($Text)) {
+            $LineLength = [ColoredText]::GetUncoloredText($Line).Length; 
+            $RemainingLength = $MaxWidth - $LineLength;
             
+            # If the Background Color is specified then we need to inject it into the
+            # start and end of the line, without interrupting the content!
             if ($BGCOLOR -notlike $null) {
-                $LineStartColor = (Select-String -InputObject $bit -Pattern "^( )*").Matches[0]
-                $LineEndColor = (Select-String -InputObject $bit -Pattern " *$").Matches[0]
+                $LineStartColor = (Select-String -InputObject $Line -Pattern "^( )*").Matches[0]
+                $LineEndColor = (Select-String -InputObject $Line -Pattern " *$").Matches[0]
 
                 # Insert inside/filler color on the end of actual content
                 if ($LineEndColor.Length -gt 0) {
-                    $bit = $bit.Substring(0, $bit.Length-$LineEndColor.Length) + "&[$BGCOLOR]$("$BGCHAR"*$LineEndColor.Length)&[]"
-                    #$bit = $bit.Insert($bit.Length-$LineEndColor.Length, "&[$BGCOLOR]")
+                    $Line = $Line.Substring(0, $Line.Length-$LineEndColor.Length) + "&[$BGCOLOR]$("$BGCHAR"*$LineEndColor.Length)&[]"
                 }
                 
+                # And the same for the start
                 if ($LineStartColor.Length -gt 0) {
-                    $bit = "&[$BGCOLOR]$("$BGCHAR" * $LineStartColor.Length)&[]" + $bit.Substring($LineStartColor.Length)
-                    #$bit = "&[$BGCOLOR]$($bit.Insert($LineStartColor.Length, "&[]"))"
+                    $Line = "&[$BGCOLOR]$("$BGCHAR" * $LineStartColor.Length)&[]" + $Line.Substring($LineStartColor.Length)
                 }
-
             }
 
-            $TextResult += "&[$BoxColor]$VerticalPiece&[$BGCOLOR]$($BGCHAR * ($PADDING*2))&[]$bit&[$BGCOLOR]$($BGCHAR * ($RemainingLength+($PADDING*2)))&[$BoxColor]$VerticalPiece&[]"
+            $TextResult += "&[$BoxColor]$VerticalPiece&[$BGCOLOR]$($BGCHAR * ($PADDING*2))&[]$Line&[$BGCOLOR]$($BGCHAR * ($RemainingLength+($PADDING*2)))&[$BoxColor]$VerticalPiece&[]"
         }
-        $Result += ($TextResult -join "`n")
-        
-        for ($i = 0; $i -lt $PADDING; $i++) {
-            $Result += $verticalBar
-        }
-        $Result += $horizontalBar
+
+        $Result.Insert($Result.Count/2, ($TextResult -join "`n"))
 
         return [ColoredText]::CompressColorDefinitions($Result -join "`n")
     }
