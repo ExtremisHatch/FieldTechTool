@@ -62,13 +62,13 @@ function StartRemoteDesktopQuerying {
 
     
     $PingResults = $Result.Ping
-    $PingStatus = if ($PingResults.Success) { "&[green]Successful" } else { "&[red]Failed" }
+    $PingStatus = if ($PingResults.Success -eq $true) { "&[green]Successful" } else { "&[red]Failed" }
     
     # Display the Ping Status
     [PowerIO]::DisplayText("`t&[gray]Ping: $PingStatus")
 
     # If Ping was successful, display ping stats
-    if ($PingResults.Success) {
+    if ($PingResults.Success -eq $true) {
         $PingStats = [PingUtilities]::GetStatistics($PingResults.Pings)
 
         $ResultsText = "Results: "
@@ -129,12 +129,12 @@ function StartAccessPointQuerying {
     [PowerIO]::DisplayText("`n&[yellow]Testing '&[hl]$($SelectedConfiguration.InterfaceAlias)&[/hl]', Pinging IPv4 Gateway '&[hl]$DefaultGateway&[/hl]'")
     
     $PingResults = PingServer -Server $DefaultGateway -Count 25
-    $PingStatus = if ($PingResults.Success) { "&[green]Successful" } else { "&[red]Failed" }
+    $PingStatus = if ($PingResults.Success -eq $true) { "&[green]Successful" } else { "&[red]Failed" }
     
     # Display the Ping Status
     # Copypasta from the other method
     [PowerIO]::DisplayText("`t&[gray]Ping: $PingStatus")
-    if ($PingResults.Success) { # If any succeed
+    if ($PingResults.Success -eq $true) { # If any succeed
         $PingStats = [PingUtilities]::GetStatistics($PingResults)
 
         $ResultsText = "Results: "
