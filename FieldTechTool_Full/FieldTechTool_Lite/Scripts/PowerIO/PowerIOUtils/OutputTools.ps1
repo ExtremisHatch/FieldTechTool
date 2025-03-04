@@ -15,6 +15,8 @@ class BoxStyle : TextFormatStyle {
     static $DOTTED = [BoxStyle]::new(@([char]9617, [char]9617, [char]9617))
     static $PLAIN = [BoxStyle]::new(@('+', '-', '|'))
     static $THIN = [BoxStyle]::new(@([char]9484, [char]9488, [char]9492, [char]9496, [char]9472, [char]9474))
+    static $THIN_INWARDS = [BoxStyle]::new(@([char]9496, [char]9492, [char]9488, [char]9484, [char]9472, [char]9474))
+    static $ROUND = [BoxStyle]::new(@([char]9581, [char]9582, [char]9584, [char]9583, [char]9472, [char]9474))
 
     $Color;
     $InsideColor;
@@ -93,7 +95,9 @@ class CornerStyle : TextFormatStyle {
     static $THIN = [CornerStyle]::new(@([char]8988, [char]8989, [char]8990, [char]8991))
     static $TRIANGLE = [CornerStyle]::new(@([char]9700, [char]9701, [char]9699, [char]9698))
     static $ROUND = [CornerStyle]::new(@([char]9581, [char]9582, [char]9584, [char]9583))
-
+    static $THIN_INWARDS = [CornerStyle]::new(@([char]8991, [char]8990, [char]8989, [char]8988))
+    static $ROUND_INWARDS = [CornerStyle]::new(@([char]9583, [char]9584,[char]9582, [char]9581))
+    
     $Color;
     hidden CornerStyle([Object[]] $Elements) : base($Elements) {
         $this.SetColor('')

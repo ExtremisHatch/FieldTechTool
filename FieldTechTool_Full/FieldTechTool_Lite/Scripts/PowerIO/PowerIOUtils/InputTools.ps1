@@ -99,7 +99,7 @@ function QueryUserSelection {
     $choice = 0;
     $Answers | % {$choice++;
                   $Option = [InputTools]::ALTERNATING_STYLE[$choice % 2] 
-                  HandleTextTypesOutput -NoNewline -Text ("&[$SymColor;$($Option.BG)]$($Option.LeftSym)&[$($Option.FG);$($Option.BG)]" `
+                  HandleTextTypesOutput -NoNewline -Text ("&[$($Option.FG);$($Option.BG)]$($Option.LeftSym)&[$($Option.FG);$($Option.BG)]" `
                                                        + "$choice" `
                                                        + "&[$($Option.FG);$($Option.BG)]$($Option.RightSym)"); 
                   HandleTextTypesOutput -Text " $_" ; }
