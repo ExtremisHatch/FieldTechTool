@@ -5,24 +5,28 @@
 . .\Menus\admin_menu.ps1
 . .\Menus\diag_menu.ps1
 
+# I have put this function in each menu file, as I cannot have them inherit it due to
+# the fact that during development not every file is run -KT
+$TriggerText = { param($Text) [CornerStyle]::ROUND.StyleText($Text).Display() }
+
 function Show-MainMenu {
     # show a selection of options to choose from
     $Selections = @()
 
     $Selections += [KeySelection]::new('1', "&[white;red]User Administration",
-                        {   [PowerIO]::DisplayText("&[green]Navigating to User Administration menu")
+                        {   $TriggerText.Invoke("&[green]Navigating to &[highlight]User Administration menu")
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Show-AdminMenu });
 
     $Selections += [KeySelection]::new('2', "&[green]Machine Diagnostics",
-                        {   [PowerIO]::DisplayText("&[green]Navigating to Diagnostic menu")
+                        {   $TriggerText.Invoke("&[green]Navigating to &[highlight]Diagnostic menu")
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Show-DiagMenu })
 
     $Selections += [KeySelection]::new('3', "&[green]Dock Menu",
-                        {   [PowerIO]::DisplayText("&[green]Navigating to Dock menu.")
+                        {   $TriggerText.Invoke("&[green]Navigating to &[highlight]Dock menu")
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Show-DockMenu })

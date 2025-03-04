@@ -6,19 +6,22 @@
 . .\Scripts\Administration\840_G9_add.ps1
 . .\Scripts\Administration\GPU_driver_detection.ps1
 . .\Scripts\Administration\usb_activate.ps1
+
+$TriggerText = { param($Text) [CornerStyle]::ROUND.StyleText($Text).Display() }
+
 function Show-AdminMenu {
     $toolRootDirectory = Resolve-Path .
     
     $Selections = @()
 
     $Selections += [KeySelection]::new('1', "&[green]DisplayLink, Graphics, HPIA, and trigger Final Updates",
-                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]DisplayLink, HPIA, trigger Final Updates')
+                        {   $TriggerText.Invoke('&[green]Triggered &[highlight]DisplayLink, HPIA, trigger Final Updates')
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Update-Common });
                             
     $Selections += [KeySelection]::new('2', "&[green]Backup user data with Robocopy",
-                        {   [PowerIO]::DisplayText('&[green]Triggered &[highlight]Robocopy script')
+                        {   $TriggerText.Invoke('&[green]Triggered &[highlight]Robocopy script')
                             Start-Sleep -Seconds 1.5
                             Clear-Host
                             Invoke-RoboCopy
@@ -29,13 +32,13 @@ function Show-AdminMenu {
                         {   Disable-Sleep });
 
     $Selections += [KeySelection]::new('4', "&[green]Jack's script for 840 G9 (Intel) Autopilot join",
-                        {   [PowerIO]::DisplayText("&[green]Triggered &[highlight]Jack's special script!`n&[gray]Will require NuGet provider module. Please accept installation when prompted (&[highlight]Yes, we know the repo is untrusted&[gray])!")
+                        {   $TriggerText.Invoke("&[green]Triggered &[highlight]Jack's special script!`n&[gray]Will require NuGet provider module. Please accept installation when prompted (&[highlight]Yes, we know the repo is untrusted&[gray])!")
                             Start-Sleep -Seconds 3 # Increased time for longer message reading
                             Get-JackInfo
                             Clear-Host });
 
     $Selections += [KeySelection]::new('5', "&[green]Check for GPU Driver Update",
-                        {   [PowerIO]::DisplayText("&[green]Triggered &[highlight]GPU Driver Update Check")
+                        {   $TriggerText.Invoke("&[green]Triggered &[highlight]GPU Driver Update Check")
                             Start-Sleep -Seconds 1.5
                             Clear-Host
 
@@ -46,7 +49,7 @@ function Show-AdminMenu {
                             Clear-Host });
 
     $Selections += [KeySelection]::new('6', "&[green]Check or Enable USB access (will be cleared by policy eventually)",
-                        {   [PowerIO]::DisplayText("&[green]Triggered &[highlight]USB access toggling")
+                        {   $TriggerText.Invoke("&[green]Triggered &[highlight]USB access toggling")
                             Start-Sleep -Seconds 1.5
                             Clear-Host
 
