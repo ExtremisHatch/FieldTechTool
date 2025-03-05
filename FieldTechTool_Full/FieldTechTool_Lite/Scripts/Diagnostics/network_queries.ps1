@@ -84,9 +84,12 @@ function StartRemoteDesktopQuerying {
     #
 
     # Uncertain if $Result.Online = $false means no users will show, best just checking if there is users
-    if ($Result.Users.Count -gt 0) {
+    # EDIT: If it's online OR User count not 0, show Users
+    if ($Result.Online -or $Result.Users.Count -ne 0) {
         [PowerIO]::DisplayText("`t&[Gray]Users: &[green]$($Result.Users.Count)")
+    }
 
+    if ($Result.Users.Count -gt 0) {
         $Result.Users | % { 
             
             # Prefix the spacing, as this line is displayed in parts
