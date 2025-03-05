@@ -62,13 +62,13 @@ function StartRemoteDesktopQuerying {
 
     
     $PingResults = $Result.Ping
-    $PingStatus = if ($PingResults.Success) { "&[green]Successful" } else { "&[red]Failed" }
+    $PingStatus = if ($PingResults.Success -eq $true) { "&[green]Successful" } else { "&[red]Failed" }
     
     # Display the Ping Status
     [PowerIO]::DisplayText("`t&[gray]Ping: $PingStatus")
 
     # If Ping was successful, display ping stats
-    if ($PingResults.Success) {
+    if ($PingResults.Success -eq $true) {
         $PingStats = [PingUtilities]::GetStatistics($PingResults.Pings)
 
         $ResultsText = "Results: "
@@ -84,9 +84,12 @@ function StartRemoteDesktopQuerying {
     #
 
     # Uncertain if $Result.Online = $false means no users will show, best just checking if there is users
-    if ($Result.Users.Count -gt 0) {
+    # EDIT: If it's online OR User count not 0, show Users
+    if ($Result.Online -or $Result.Users.Count -ne 0) {
         [PowerIO]::DisplayText("`t&[Gray]Users: &[green]$($Result.Users.Count)")
+    }
 
+    if ($Result.Users.Count -gt 0) {
         $Result.Users | % { 
             
             # Prefix the spacing, as this line is displayed in parts
@@ -129,12 +132,12 @@ function StartAccessPointQuerying {
     [PowerIO]::DisplayText("`n&[yellow]Testing '&[hl]$($SelectedConfiguration.InterfaceAlias)&[/hl]', Pinging IPv4 Gateway '&[hl]$DefaultGateway&[/hl]'")
     
     $PingResults = PingServer -Server $DefaultGateway -Count 25
-    $PingStatus = if ($PingResults.Success) { "&[green]Successful" } else { "&[red]Failed" }
+    $PingStatus = if ($PingResults.Success -eq $true) { "&[green]Successful" } else { "&[red]Failed" }
     
     # Display the Ping Status
     # Copypasta from the other method
     [PowerIO]::DisplayText("`t&[gray]Ping: $PingStatus")
-    if ($PingResults.Success) { # If any succeed
+    if ($PingResults.Success -eq $true) { # If any succeed
         $PingStats = [PingUtilities]::GetStatistics($PingResults)
 
         $ResultsText = "Results: "
@@ -220,7 +223,15 @@ function QueryNetworkMachine {
         #Write-Host "Server unavailable: $($_.Exception)"
         # Restore EAP incase of Exception
         $ErrorActionPreference = $StoredEAP
+
+        # The (only?) exception where Server *is* online
+        if ($_.Exception -like "*No User*") {
+            $Result.Online = $True
+        }
     }
+
+    # Wait for the Ping Job to finish
+    Wait-Job $PingJob
 
     # Unsure of all the states right now, looking for number states rather than Str Compare
     if ($PingJob.State -eq "Completed") {
