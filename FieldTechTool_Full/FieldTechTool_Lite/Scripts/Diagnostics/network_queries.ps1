@@ -220,6 +220,11 @@ function QueryNetworkMachine {
         #Write-Host "Server unavailable: $($_.Exception)"
         # Restore EAP incase of Exception
         $ErrorActionPreference = $StoredEAP
+
+        # The (only?) exception where Server *is* online
+        if ($_.Exception -like "*No User*") {
+            $Result.Online = $True
+        }
     }
 
     # Unsure of all the states right now, looking for number states rather than Str Compare
