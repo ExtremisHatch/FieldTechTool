@@ -22,6 +22,7 @@ $StyledTitle = [StyledText]::Create("&[red;highlight]FIELD`n     &[red;highlight
 # Styles to apply to the title text
 $Styles = @([BoxStyle]::Create([BoxStyle]::DOTTED, 'yellow;red', 0, ';red'), 
             [BoxStyle]::Create([BoxStyle]::DOTTED, 'red;yellow', 0),
+            [BoxStyle]::Create([BoxStyle]::ROUND, "red"),
             [CornerStyle]::Create([CornerStyle]::THIN, 'yellow'))
 
 # Apply all those good ole styles, how stylish
