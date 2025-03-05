@@ -357,6 +357,10 @@ class OutputText {
         return $this
     }
     
+    [String] ToString() {
+        return ($this.Pieces | % { $_.ToString() }) -join ''
+    }
+
     [void] Display([boolean]$NewLine) {
         $LastPiece = $null
         foreach ($Piece in $this.Pieces) {
@@ -558,6 +562,10 @@ class OutputPiece {
     }
 
     [String] GetText() {
+        return $this.ToString()
+    }
+
+    [String] ToString() {
         return $this.Text
     }
 
@@ -736,19 +744,42 @@ function VisualTestWhiteboard() {
 
 function VisualTestDotBlock() {
     $Colors = [System.ConsoleColor]::GetValues([System.ConsoleColor])
-    
-    $DotWidth = 2;
+    $DotHeight = 2;
+    $Combinations = @()
 
-    foreach ($col in $Colors) {
-        
-        0..($DotWidth-1) | % {
-            foreach ($col2 in $Colors) {
-                Write-Host -NoNewline "$("$([char]9617)" * ($DotWidth*2))" -ForegroundColor $col -BackgroundColor $col2; Write-Host " " -NoNewline;
+    $Colors | % { $Primary = $_; $Colors | % { $Combinations += ,@($Primary, $_) } }
+
+    for ($i = 0; $i -lt $Colors.Count; $i++) {
+        # Repeat samples X times (Height)
+        for ($x = 0; $x -lt $DotHeight; $x++) {
+            # Iterate through 1 sample row of all colors
+            for ($j = 0; $j -lt $Colors.Count; $j++) {
+                $Combination = $Combinations[($i * $Colors.Count) + $j]
+                Write-Host -NoNewline "$("$([char]9617)" * ($DotHeight*2))" -ForegroundColor $Combination[0] -BackgroundColor $Combination[1];
             }
-        Write-Host "";
+
+            Write-Host "  " -BackgroundColor $Combination[0] -NoNewline
+
+            if ($x -ne ($DotHeight-1)) {
+                Write-Host ""
+            }
         }
-        Write-Host "";
+        Write-Host " $($Combination[0])"
     }
+
+    $SplitColorNameRegex = "(.{0,$($DotHeight*2)})(.{0,$($DotHeight*2)})"
+
+    # This is so janky, but it's "clean" enough visually compared to old method
+    $LowerKey = "";
+    $SecondLowerKey = ""
+    $Colors | % { $ColorMatch = [Regex]::Match($_.ToString(), $SplitColorNameRegex).Groups
+                  $LowerKey += $ColorMatch[1].Value.PadRight($DotHeight*2)
+                  $SecondLowerKey += $ColorMatch[2].Value.PadRight($DotHeight*2)
+                  
+                  Write-Host "$("  " * $DotHeight)" -BackgroundColor $_ -NoNewline 
+                }
+
+    Write-Host "`n$LowerKey"; Write-Host $SecondLowerKey;
 }
 
 function VisualTestTextTools() {
@@ -837,5 +868,42 @@ function VisualTestTextTools() {
     Write-Host "Took: $($totalTime.TotalSeconds) second(s)"
 }
 
+class TreeElement {
+
+    hidden static [int] $ChildOffset = 4;
+    
+    [String] $Text;
+    [TreeElement[]] $Children;
+
+    TreeElement($Text) {
+        $this.Text = $Text
+        $this.Children = @()
+    }
+
+    [TreeElement] AddChild($Text) {
+        $Child = [TreeElement]::new($Text)
+        $this.Children += $Child
+        return $Child
+    }
+
+    Display() {
+        $this.Display(0, '')
+    }
+
+    hidden Display($Indent, $Prefix) {
+        if ($Indent -ge [TreeElement]::ChildOffset) {
+            Write-Host "$(' '*($Indent-[TreeElement]::ChildOffset))" -NoNewline
+        } else {
+            Write-Host "$(' '*$Indent)" -NoNewline
+        }
+        Write-Host "$Prefix$($this.Text)"
+
+        for ($i=0; $i -lt $this.Children.Count; $i++) {
+            $Prefix = if ($i -eq ($this.Children.Count - 1)) { '└' } else { '├' }
+            $this.Children[$i].Display($Indent+4, "${Prefix}──")
+        }
+    }
+
+}
 
 ###

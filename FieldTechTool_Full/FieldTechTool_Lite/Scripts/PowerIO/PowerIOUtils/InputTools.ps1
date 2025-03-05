@@ -7,9 +7,12 @@
 class InputTools {
     static [Hashtable[]] $ALTERNATING_STYLE = @(@{FG='yellow';BG='darkgray';LeftSym=([char]9496).ToString();RightSym=([char]9484).ToString()}, 
                         @{FG='Black'; BG='yellow'; LeftSym=([char]9488).ToString(); RightSym=([char]9492).ToString()})
+
+    # If Question doesn't end with Newline or Space, it needs separation from the answer
+    static [boolean] SeparateQuestionAnswer($Question) {
+        return $Question.ToString() -notmatch "(\n$)|( $)"
+    }
 }
-
-
 
 function HandleTextTypesOutput {
 <#
@@ -28,7 +31,12 @@ function HandleTextTypesOutput {
             [ColoredText]::Display($Text, (-not $NoNewline))
         }
         
-        default: {
+        {$_ -is [StyledText]} {
+            # Styled Text Display recalls this method with the Raw text
+            ([StyledText]$_).Display(-not $NoNewline)
+        }
+
+        default {
             throw "Unsupported Argument Type for 'Text': $($Text.GetType())"
         }
     }
@@ -48,9 +56,8 @@ function QueryUser {
     # Output question
     HandleTextTypesOutput -Text $Question -NoNewline
 
-    # Add spacing after question
-    Write-Host " " -NoNewline
-
+    # Add spacing after question, if there isn't already
+    if ([InputTools]::SeparateQuestionAnswer($Question)) { Write-Host " " -NoNewline }
     
     if ($MultiLineAnswer) {
         $answers = @()
@@ -80,11 +87,8 @@ function QueryUserSelection {
         [Switch] $NoQuestionSymbol # Toggle for automatic Question Symbol & alignment
     )
 
-    # Before we display question, should we be aligning it?
-    if (-not $NoQuestionSymbol) {
-        ## Additional offset from just Key Length
-        ## This is the Symbol on left & right, along with space between Key & it's value
-        #$AdditionalOffset = 3; # Set to 0
+    # Can't display Question Symbol on Multiline questions, it messes up the layout/format
+    if (-not $NoQuestionSymbol -and [TextTools]::GetLines($Question.ToString()).Count -lt 2) {
         HandleTextTypesOutput -Text "&[gray]$([char]10067)" -NoNewline    
     }
 
@@ -92,12 +96,10 @@ function QueryUserSelection {
     HandleTextTypesOutput -Text $Question #-NoNewline
 
     # Print Out Labelled Answers
-    
-
     $choice = 0;
     $Answers | % {$choice++;
                   $Option = [InputTools]::ALTERNATING_STYLE[$choice % 2] 
-                  HandleTextTypesOutput -NoNewline -Text ("&[$SymColor;$($Option.BG)]$($Option.LeftSym)&[$($Option.FG);$($Option.BG)]" `
+                  HandleTextTypesOutput -NoNewline -Text ("&[$($Option.FG);$($Option.BG)]$($Option.LeftSym)&[$($Option.FG);$($Option.BG)]" `
                                                        + "$choice" `
                                                        + "&[$($Option.FG);$($Option.BG)]$($Option.RightSym)"); 
                   HandleTextTypesOutput -Text " $_" ; }
@@ -140,11 +142,8 @@ function QueryUserKeySelection {
     $MaxKeyLength = ($Keys | Select-Object -ExpandProperty Length | Sort-Object -Descending)[0]
 
     
-    # Before we display question, should we be aligning it?
-    if (-not $NoQuestionSymbol) {
-        ## Additional offset from just Key Length
-        ## This is the Symbol on left & right, along with space between Key & it's value
-        #$AdditionalOffset = 3; # Set to 0
+    # Can't display Question Symbol on Multiline questions, it messes up the layout/format
+    if (-not $NoQuestionSymbol -and [TextTools]::GetLines($Question.ToString()).Count -lt 2) {
         HandleTextTypesOutput -Text "&[gray]$([char]10067)" -NoNewline    
     }
 
@@ -207,7 +206,7 @@ function PauseUser {
     .SYNOPSIS
     Pauses the user, forcing them to press enter to continue
 #>
-    param( [string] $PauseText="&[yellow]Press '&[highlight]ENTER&[yellow]' to continue..." )
+    param($PauseText="&[yellow]Press '&[highlight]ENTER&[yellow]' to continue..." )
 
     # Ensure NoNewLine exists, unless specifically set to False
 
