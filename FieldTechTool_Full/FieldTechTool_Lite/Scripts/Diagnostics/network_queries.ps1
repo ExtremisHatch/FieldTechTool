@@ -227,6 +227,9 @@ function QueryNetworkMachine {
         }
     }
 
+    # Wait for the Ping Job to finish
+    Wait-Job $PingJob
+
     # Unsure of all the states right now, looking for number states rather than Str Compare
     if ($PingJob.State -eq "Completed") {
         $PingResults = Receive-Job $PingJob -Wait -AutoRemoveJob
