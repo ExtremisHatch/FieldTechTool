@@ -232,15 +232,9 @@ function QueryNetworkMachine {
 
     # Wait for the Ping Job to finish
     Wait-Job $PingJob
-
-    # Unsure of all the states right now, looking for number states rather than Str Compare
-    if ($PingJob.State -eq "Completed") {
-        $PingResults = Receive-Job $PingJob -Wait -AutoRemoveJob
+    $PingResults = Receive-Job $PingJob -Wait
         
-        # If all of our pings failed, then pinging failed!
-        $Failed = ($PingResults | Where-Object { $_.Success }).Count -eq 0
 
-        # Mark Pinging as a success if it wasn't a complete fail!
         if (-not $Failed) {
             $Result.Ping.Success = $True    
             $Result.Ping.Pings = $PingResults
