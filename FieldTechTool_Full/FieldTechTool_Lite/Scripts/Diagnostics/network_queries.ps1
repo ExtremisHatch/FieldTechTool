@@ -59,16 +59,15 @@ function StartRemoteDesktopQuerying {
     #
     # Ping Information
     #
-
     
     $PingResults = $Result.Ping
-    $PingStatus = if ($PingResults.Success -eq $true) { "&[green]Successful" } else { "&[red]Failed" }
+    $PingStatus = if ($PingResults.Success) { "&[green]Successful" } else { "&[red]Failed" }
     
     # Display the Ping Status
     [PowerIO]::DisplayText("`t&[gray]Ping: $PingStatus")
 
     # If Ping was successful, display ping stats
-    if ($PingResults.Success -eq $true) {
+    if ($PingResults.Success) {
         $PingStats = [PingUtilities]::GetStatistics($PingResults.Pings)
 
         $ResultsText = "Results: "
@@ -231,15 +230,22 @@ function QueryNetworkMachine {
     }
 
     # Wait for the Ping Job to finish
-    Wait-Job $PingJob
     $PingResults = Receive-Job $PingJob -Wait
         
+    # Unsure of all Job states, for now it's completed or a failure!
+    # Remove the job, and check it's state simultaneously :O
+    if ($PingJob.State -eq "Completed") {
+        # Set the Ping data
+        $Result.Ping.Pings = $PingResults
 
-        if (-not $Failed) {
-            $Result.Ping.Success = $True    
-            $Result.Ping.Pings = $PingResults
-        }
+        # Pinging is a "success" if atleast 1 Ping was successful
+        $Result.Ping.Success = ($PingResults | Where-Object { $_.Success }).Count -ge 1
     }
+
+    # Remove da job !
+    # I swear one time it returned a job object, and even though after vigorous testing it hasn't 
+    # done it again, I am still piping this to null. No chances.
+    Remove-Job $PingJob > $null
 
     return $Result
 }
