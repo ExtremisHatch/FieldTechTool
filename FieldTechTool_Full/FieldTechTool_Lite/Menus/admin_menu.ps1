@@ -6,6 +6,7 @@
 . .\Scripts\Administration\840_G9_add.ps1
 . .\Scripts\Administration\GPU_driver_detection.ps1
 . .\Scripts\Administration\usb_activate.ps1
+. .\Scripts\Administration\machine_name_change.ps1
 
 $TriggerText = { param($Text) [CornerStyle]::ROUND.StyleText($Text).Display() }
 
@@ -47,17 +48,13 @@ function Show-AdminMenu {
 
                             PauseUser
                             Clear-Host });
+    $Selections += [KeySelection]::new('6', "&[green]Jack's script to rename a Hatch machine (run locally). &[highlight]Will force a restart if change is made!",
+                        {   $TriggerText.Invoke("&[green]Triggered &[highlight]Jack's special script!`n")
+                            Start-Sleep -Seconds 3
+                            Edit-MachineName
+                            Clear-Host});
 
-    $Selections += [KeySelection]::new('6', "&[green]Check or Enable USB access (will be cleared by policy eventually)",
-                        {   $TriggerText.Invoke("&[green]Triggered &[highlight]USB access toggling")
-                            Start-Sleep -Seconds 1.5
-                            Clear-Host
-
-                            # Toggle USB access
-                            Enable_USB
-
-                            PauseUser
-                            Clear-Host });
+    
 
     $PreviousMenuSelection = [KeySelection]::new('q', "&[yellow]Previous menu",
                         {   Clear-Host });
@@ -69,3 +66,15 @@ function Show-AdminMenu {
         $Selection.Run()
     }
 }
+
+# May add this feature back a different time but is now obsolete. Don't want to get rid of the implmentation. 
+                            # $Selections += [KeySelection]::new('6', "&[green]Check or Enable USB access (will be cleared by policy eventually)",
+    #                     {   $TriggerText.Invoke("&[green]Triggered &[highlight]USB access toggling")
+    #                         Start-Sleep -Seconds 1.5
+    #                         Clear-Host
+
+    #                         # Toggle USB access
+    #                         Enable_USB
+
+    #                         PauseUser
+    #                         Clear-Host });
