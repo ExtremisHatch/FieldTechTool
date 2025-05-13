@@ -53,7 +53,7 @@ function GetUserUSBPermissions {
     $USBPermissions = @{}
 
     # Permission Types, if '-eq 0' it means NOT deny meaning YES permission
-    @('Read','Write','Execute') | % { $USBPermissions[$_] = ($RegPath.GetValue("Deny_$($_)") -eq 0) }
+    @('Read','Write','Execute') | ForEach-Object { $USBPermissions[$_] = ($RegPath.GetValue("Deny_$($_)") -eq 0) }
 
     return $USBPermissions
 }
@@ -109,7 +109,7 @@ function TestCanModifyRegistry {
 }
 
 function Enable_USB {
-    
+    Write-Host "Got to Enable USB"
     # Get Current USB Permissions/Capabilities
     $CurrentPermissions = GetUserUSBPermissions
     $UserUSBAllowed = -not $CurrentPermissions.ContainsValue($false)
@@ -119,14 +119,14 @@ function Enable_USB {
     $IntuneUSBAllowed = $IntunePermissions.StorageAllowed -and $IntunePermissions.StorageEnabled
 
     # Display USB Status
-    [PowerIO]::DisplayText("&[white;darkgray] USB Configuration &[]`n")
+    # [PowerIO]::DisplayText("&[white;darkgray] USB Configuration &[]`n")
 
-    [PowerIO]::DisplayText("&[white;darkgray]Intune USB Management:")
-    [PowerIO]::DisplayText("`t&[gray]Storage Allowed: &[$(if ($IntunePermissions.StorageAllowed){'green'}else{'red'})]$($IntunePermissions.StorageAllowed)")
-    [PowerIO]::DisplayText("`t&[gray]Storage Enabled: &[$(if ($IntunePermissions.StorageEnabled){'green'}else{'red'})]$($IntunePermissions.StorageEnabled)")
+    # [PowerIO]::DisplayText("&[white;darkgray]Intune USB Management:")
+    # [PowerIO]::DisplayText("`t&[gray]Storage Allowed: &[$(if ($IntunePermissions.StorageAllowed){'green'}else{'red'})]$($IntunePermissions.StorageAllowed)")
+    # [PowerIO]::DisplayText("`t&[gray]Storage Enabled: &[$(if ($IntunePermissions.StorageEnabled){'green'}else{'red'})]$($IntunePermissions.StorageEnabled)")
 
-    [PowerIO]::DisplayText("&[white;darkgray]User USB Permissions:")
-    $CurrentPermissions.Keys | % { $HasPerm = $CurrentPermissions.Item($_); [PowerIO]::DisplayText("`t&[gray]$($_): &[$(if ($HasPerm) {'green'} else {'red'})]$HasPerm") }
+    # [PowerIO]::DisplayText("&[white;darkgray]User USB Permissions:")
+    # $CurrentPermissions.Keys | % { $HasPerm = $CurrentPermissions.Item($_); [PowerIO]::DisplayText("`t&[gray]$($_): &[$(if ($HasPerm) {'green'} else {'red'})]$HasPerm") }
 
 
     # Create Parent form for TopMost setting by Taylor, Koupa

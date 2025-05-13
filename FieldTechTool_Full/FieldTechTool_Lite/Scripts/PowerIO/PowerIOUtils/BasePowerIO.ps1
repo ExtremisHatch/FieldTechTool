@@ -69,7 +69,7 @@ class PowerIO {
             $Format +=  "$TertiaryColor + &[red]CategoryInfo:&[yellow] {3}"
             $Format +=  "$TertiaryColor + &[red]FullyQualifiedErrorId:&[yellow] {4}"
 
-            $ErrorText = ($Format -join "`n") -f $fields
+            $ErrorText = ($Format -join "`n" -f $fields)
         } else {
             $ErrorType = if ($TheError -eq $null) { 'null' } else { $TheError.GetType().name }
             $ErrorText = "&[red]Error (Unhandled Type: '$ErrorType')"
