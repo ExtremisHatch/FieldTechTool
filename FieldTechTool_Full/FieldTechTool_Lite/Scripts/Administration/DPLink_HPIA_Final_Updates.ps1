@@ -12,11 +12,16 @@ function Update-Common {
     }
 
     # DisplayLink and HPIA can run at the same time without conflicting
-    Start-Process -FilePath $disLink
+    # Start-Process -FilePath $disLink
     if (Test-Path -Path ".\Scripts\Executables\Add-ons") {
         Install-Graphics
-    } 
-    Start-Process -FilePath $hpia -Wait
+    }
+    
+    $answer = Read-Host "Is this an HP device? Enter Y or y only. Otherwise, HPIA won't run if you want it to."
+    if (($answer -match 'y') -or ($answer -match 'Y')) {
+        Start-Process -FilePath $hpia -Wait
+    }
+    
     Clear-Host
     # Waits until HPIA is done and triggers Windows Update
     Start-Process -FilePath 'ms-settings:windowsupdate'
